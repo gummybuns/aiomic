@@ -21,12 +21,14 @@
 #define DEFAULT_STREAM_DURATION 250
 #define DEFAULT_PATH "/dev/sound"
 #define DEFAULT_BAR_WIDTH 4
+#define DEFAULT_BOX_HEIGHT 2
+#define MAX_NBOXES = COLOR_PAIRS - 2
 
 static inline int
 build_draw_config(draw_config_t *config)
 {
 	int rows, cols, x_padding, y_padding;
-	u_int computed_width;
+	u_int computed;
 
 	getmaxyx(stdscr, rows, cols);
 	x_padding = (int)((float)cols * PADDING_PCT);
@@ -47,15 +49,29 @@ build_draw_config(draw_config_t *config)
 		config->nbars = (u_int)config->max_w/(config->bar_width + config->bar_space);
 	}
 
-	computed_width = config->nbars * config->bar_width + config->nbars * config->bar_space;
-	if ( computed_width > (u_int)config->max_w) {
+	if (config->use_boxes) {
+		config->box_height = DEFAULT_BOX_HEIGHT;
+		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
+	} else {
+		config->nboxes = 1;
+		config->box_height = config->max_h / (config->nboxes + config->box_space);
+	}
+
+	computed = config->box_height * config->nboxes + config->box_space * config->nboxes;
+	if (computed > config->max_h) {
+		return E_DRW_CONFIG_NBOXES;
+	}
+
+	//err(1,"bh: %d / bn: %d, mh: %d", config->box_height, config->nboxes, config->max_h);
+	computed = config->nbars * config->bar_width + config->nbars * config->bar_space;
+	if (computed > (u_int)config->max_w) {
 		return E_DRW_CONFIG_NBARS;
 	}
 
 	return 0;
 }
 
-static const char * shortopts = "c:d:e:f:m:n:p:s:w:C:M:U";
+static const char * shortopts = "c:d:e:f:m:n:p:s:w:C:M:XU";
 static struct option longopts[] = {
 	{ "channels", 		required_argument, 	NULL,	'c' },
 	{ "device", 		required_argument, 	NULL,	'd' },
@@ -66,9 +82,10 @@ static struct option longopts[] = {
 	{ "precision",		required_argument,	NULL,	'p' },
 	{ "sample-rate",	required_argument,	NULL,	's' },
 	{ "bar-width",		required_argument,	NULL,	'w' },
-	{ "color",		required_argument,	NULL,	'C' },
+	{ "color",			required_argument,	NULL,	'C' },
 	{ "milliseconds",	required_argument,	NULL,	'M' },
-	{ "use-colors",		no_argument,		NULL,	'U' }
+	{ "use-colors",		no_argument,		NULL,	'U' },
+	{ "use-boxes",		no_argument,		NULL,	'X' },
 };
 
 int
@@ -97,6 +114,8 @@ main(int argc, char *argv[])
 	draw_config.bar_color = -1;
 	draw_config.bar_space = 0;
 	draw_config.use_color = 0;
+	draw_config.use_boxes = 0;
+	draw_config.box_space = 0;
 	fft_samples = DEFAULT_NSAMPLES;
 	fft_fmin = DEFAULT_FMIN;
 	ms = DEFAULT_STREAM_DURATION;
@@ -138,6 +157,7 @@ main(int argc, char *argv[])
 			draw_config.use_color = 1;
 			decode_color(optarg, &(draw_config.bar_color));
 			draw_config.bar_space = 1;
+			draw_config.box_space = 1;
 			break;
 		case 'M':
 			decode_uint(optarg, &ms);
@@ -145,6 +165,10 @@ main(int argc, char *argv[])
 		case 'U':
 			draw_config.use_color = 1;
 			draw_config.bar_space = 1;
+			draw_config.box_space = 1;
+			break;
+		case 'X':
+			draw_config.use_boxes = 1;
 			break;
 		default:
 			// TODO - usage()

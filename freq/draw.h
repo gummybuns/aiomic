@@ -18,8 +18,6 @@
 #define PADDING_PCT 0.1f
 
 typedef struct bar_t {
-	WINDOW *win; /* the window representing the bar */
-	WINDOW *shadow; /* overwrites the previous bar render */
 	float fmin;  /* minimum frequency of the bar */
 	float fmax;  /* maximum frequency of the bar */
 	u_int nbins; /* number of bins represented in the bar */

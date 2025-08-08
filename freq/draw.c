@@ -132,8 +132,6 @@ reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
 		    powf(fft_config.fmax / fft_config.fmin, frac_end);
 		bars[i].magnitude = 0.0f;
 		bars[i].nbins = 0;
-
-		//delwin(bars[i].win);
 	}
 
 	return 0;
@@ -151,7 +149,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress, debug_on;
-	int active_bars, draw_start, option, res, scroll_pos;
+	int active_bars, draw_start, option, res, scroll_pos, draw_height, k;
 	u_int i, j;
 	float avg, freq, scaled_magnitude;
 	u_char data[audio_stream.total_size];
@@ -159,6 +157,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	bar_t bars[draw_config.nbars];
 	bin_t bins[fft_config.nbins];
 	WINDOW *dpad, *fwin;
+	WINDOW *bwin[draw_config.nbars][draw_config.nboxes];
 
 	debug_on = 0;
 	dpad = NULL;
@@ -170,7 +169,9 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	wrefresh(fwin);
 
 	for (i = 0; i < draw_config.nbars; i++) {
-		bars[i].win = NULL;
+		for (j = 0; j < draw_config.nboxes; j++) {
+			bwin[i][j] = NULL;
+		}
 	}
 
 	for (;;) {
@@ -229,14 +230,31 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			// need at least a height of 2 to draw a box
 			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
 
-			bars[i].win = subwin(fwin,(int) scaled_magnitude, (int)draw_config.bar_width, draw_config.max_h - (int)scaled_magnitude, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
-
-			if (draw_config.use_color > 0) {
-				//wbkgd(bars[i].shadow, COLOR_PAIR(1));
-				wbkgd(bars[i].win, COLOR_PAIR(1) | A_REVERSE);
+			// TODO - i need to delwin and clean up everything each iteration
+			k = 0;
+			if (draw_config.nboxes == 1) {
+				bwin[i][0] = subwin(fwin,(int) scaled_magnitude, (int)draw_config.bar_width, draw_config.max_h - (int)scaled_magnitude, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
 			} else {
-				//wborder(bars[i].shadow, ' ', ' ', ' ',' ',' ',' ',' ',' ');
-				box(bars[i].win, 0, 0);
+				draw_height = 0;
+				while (draw_height < scaled_magnitude) {
+					bwin[i][k] = subwin(fwin, (int)draw_config.box_height, (int)draw_config.bar_width, draw_config.max_h - (int)k*draw_config.box_height - (int)k*draw_config.box_space, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
+					draw_height += (draw_config.box_height + draw_config.box_space);
+					k++;
+				}
+				k--;
+			}
+
+			if (draw_config.use_color) {
+				//wbkgd(bars[i].win, COLOR_PAIR(1) | A_REVERSE);
+				do {
+					wbkgd(bwin[i][k], COLOR_PAIR(1) | A_REVERSE);
+					k--;
+				} while (k >= 0);
+			} else {
+				do {
+					box(bwin[i][k], 0, 0);
+					k--;
+				} while (k >= 0);
 			}
 			//wnoutrefresh(bars[i].shadow);
 			//wnoutrefresh(bars[i].win);
