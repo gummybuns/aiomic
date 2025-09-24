@@ -10,6 +10,12 @@
 #include "error_codes.h"
 
 typedef double complex cplx;
+typedef struct bar_t {
+	float f_min;
+	float f_max;
+	int bin_count;
+	float magnitude;
+} bar_t;
 
 inline void _fft(cplx buf[], cplx out[], u_int n, u_int step)
 {
@@ -148,11 +154,12 @@ to_normalized_pcm(void *full_sample, float *pcm, audio_stream_t *audio_stream)
 }
 
 
+
 int
-draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
+draw_frequency(audio_ctrl_t ctrl)
 {
 	char keypress;
-	int res, option;
+	int res, option, row;
 	u_int i, j, start;
 	float real, imag;
 	void *full_samples;
@@ -163,35 +170,59 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 	 * therefore there are total_samples / 1024 fft_frames we are going to compute
 	 * every frame has a start_idx / end_idx. that tells us where to look in the buffer
 	 */
-	u_int bar_count = 100;
+	//getmaxyx(stdscr, row, col);
+	row = getmaxy(stdscr);
+	//col = getmaxx(stdscr);
+	u_int bar_count = 50;
 	u_int fft_size = 1024;
 	u_int bins = fft_size / 2;
-	u_int frames = audio_stream->total_samples / fft_size;
-	u_int bins_per_par = bins/bar_count;
-	u_int max_height = 30;
-	float magnitudes[frames][bins];
+	//u_int max_height = (u_int)row;
+	float f_min = 50.0f;
+	float f_max = (float)ctrl.config.sample_rate / 2.0f;
 	float avg[bins];
-	float total = 0;
 	float max_avg = 0;
-	float bars[bar_count];
+	//float bars[bar_count];
+	bar_t bars[bar_count];
 	cplx buf[fft_size];
+	audio_stream_t audio_stream;
+
+	res = build_stream_from_ctrl(ctrl, 250, &audio_stream);
+	if (res != 0) {
+		return res;
+	}
+
+	u_int frames = audio_stream.total_samples / fft_size;
+	float magnitudes[frames][bins];
 
 	nodelay(stdscr, TRUE);
 	for (;;) {
 		move(0, 0);
 		max_avg = 0;
+		for (i = 0; i < bar_count; i++) {
+			float frac_start = (float)i / (float)bar_count;
+			float frac_end = (float)(i+1) / (float)bar_count;
+			/*
+			float p = 2.0f;
+			float frac_start = powf((float)i / (float)bar_count, p);
+			float frac_end   = powf((float)(i + 1) / (float)bar_count, p);
+			*/
+			bars[i].f_min = f_min * powf(f_max / f_min, frac_start);
+			bars[i].f_max = f_min * powf(f_max / f_min, frac_end);
+			bars[i].magnitude = 0.0f;
+			bars[i].bin_count = 0;
+		}
 		for (i = 0; i < bins; i++) {
 			avg[i] = 0;
 		}
 
-		res = stream(ctrl, audio_stream);
+		res = stream(ctrl, &audio_stream);
 		if (res != 0) {
 			return res;
 		}
 
-		full_samples = flatten_stream(audio_stream);
-		pcm = malloc(sizeof(float) * audio_stream->total_samples);
-		if (to_normalized_pcm(full_samples, pcm, audio_stream) > 0) {
+		full_samples = flatten_stream(&audio_stream);
+		pcm = malloc(sizeof(float) * audio_stream.total_samples);
+		if (to_normalized_pcm(full_samples, pcm, &audio_stream) > 0) {
 			free(full_samples);
 			free(pcm);
 			return res;
@@ -227,24 +258,33 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 			avg[j] = avg[j] / (float)frames;
 		}
 
-		for (i = 0; i < bins; i += bins_per_par) {
-			total = 0;
-			//float draw_height;
-			//float percent;
-			for (j = i; j < i + bins_per_par-1 && j < bins; j++) {
-				total += avg[j];
-			}
-			bars[i/bins_per_par] = total;
-			if (max_avg < total && i != 0) {
-				max_avg = total;
+		for (i = 0; i < bins; i++) {
+			float freq = (float)i * (float)ctrl.config.sample_rate / (float)fft_size;
+			for (j = 0; j < bar_count; j++) {
+				if (freq >= bars[j].f_min && freq < bars[j].f_max) {
+					bars[j].magnitude += avg[i];
+					bars[j].bin_count += 1;
+					break;
+				}
 			}
 		}
 
 		for (i = 0; i < bar_count; i++) {
-			float scaled_magnitude = (bars[i] / max_avg) * (float) max_height;
-			mvprintw((int)i, 0, "|");
-			mvvline(0, (int)i, ' ', (int)max_height);
-			mvvline(0, (int)i, '|', (int)scaled_magnitude);
+			if (max_avg < bars[i].magnitude / (float)bars[i].bin_count) {
+				max_avg = bars[i].magnitude / (float)bars[i].bin_count;
+			}
+		}
+
+		for (i = 0; i < bar_count; i++) {
+			float a = bars[i].bin_count <= 0 ? 0 : bars[i].magnitude / (float)bars[i].bin_count;
+			float scaled_magnitude = fminf(ceilf(a * 1.2f), (float)row);
+			//float scaled_magnitude = (a / max_avg) * (float) max_height;
+			//mvhline((int) i, 0, ' ', col);
+			//move((int)i, 0);
+			mvprintw((int)i, 0, "%f - %f: %f / %d", bars[i].f_min, bars[i].f_max, a, bars[i].bin_count);
+			//hline('=', (int)scaled_magnitude);
+			mvvline(0, (int)i+60, ' ', row);
+			mvvline(row-(int)scaled_magnitude, (int)i + 60, '|', (int)scaled_magnitude);
 		}
 		refresh();
 
@@ -254,7 +294,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 		/* listen for input */
 		keypress = (char)getch();
 		option = check_options(keypress);
-		if (option != 0 && option != DRAW_RECORD) {
+		if (option != 0 && option != DRAW_FREQ) {
 			return option;
 		}
 	}

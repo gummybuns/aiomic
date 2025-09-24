@@ -137,7 +137,7 @@ clean_buffers(audio_stream_t *stream)
  * TODO there is probably a better way to do this with memcpy or something
  */
 void *
-flatten_stream(audio_stream_t *stream)
+flatten_stream(audio_stream_t *a_stream)
 {
 	u_int i, j, s;
 	void *flattened;
@@ -146,12 +146,12 @@ flatten_stream(audio_stream_t *stream)
 	float *fdata;
 	audio_buffer_t *buffer;
 
-	flattened = malloc(stream->total_size);
+	flattened = malloc(a_stream->total_size);
 	s = 0;
-	for (i = 0; i < stream->buffer_count; i++) {
-		buffer = stream->buffers[i];
+	for (i = 0; i < a_stream->buffer_count; i++) {
+		buffer = a_stream->buffers[i];
 		for (j = 0; j < buffer->size; j++) {
-			switch (stream->precision) {
+			switch (a_stream->precision) {
 			case 8:
 				cdata = (u_char *)buffer->data;
 				((u_char *)flattened)[s] = cdata[j];

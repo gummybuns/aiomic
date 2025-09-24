@@ -43,7 +43,7 @@ main(int argc, char *argv[])
 	raw();
 	noecho();
 
-	option = DRAW_FREQ;
+	option = DRAW_RECORD;
 	for (;;) {
 		draw_options();
 
@@ -68,7 +68,7 @@ main(int argc, char *argv[])
 			if (res != 0) {
 				err(1, "Failed to build audio stream: %d", res);
 			}
-			option = draw_frequency(rctrl, &rstream);
+			option = draw_frequency(rctrl);
 			clean_buffers(&rstream);
 		} else {
 			break;
