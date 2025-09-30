@@ -132,42 +132,55 @@ clean_buffers(audio_stream_t *stream)
 	return 0;
 }
 
-/*
- * Convert all buffers on a stream into a single array
- * TODO there is probably a better way to do this with memcpy or something
- */
-void *
-flatten_stream(audio_stream_t *a_stream)
+int
+flatten_stream(audio_stream_t *a_stream, void *flattened) {
+    u_int i;
+    u_char *dst = (u_char *)flattened;
+    audio_buffer_t *buffer;
+
+    for (i = 0; i < a_stream->buffer_count; i++) {
+        buffer = a_stream->buffers[i];
+        memcpy(dst, buffer->data, buffer->size);
+        dst += buffer->size;
+    }
+
+    return 0;
+}
+
+
+int
+to_normalized_pcm(void *full_sample, float *pcm, audio_stream_t *audio_stream)
 {
-	u_int i, j, s;
-	void *flattened;
-	u_char *cdata;
+	u_int encoding, i, precision, total_samples;
+	char *cdata;
 	short *sdata;
 	float *fdata;
-	audio_buffer_t *buffer;
 
-	flattened = malloc(a_stream->total_size);
-	s = 0;
-	for (i = 0; i < a_stream->buffer_count; i++) {
-		buffer = a_stream->buffers[i];
-		for (j = 0; j < buffer->size; j++) {
-			switch (a_stream->precision) {
-			case 8:
-				cdata = (u_char *)buffer->data;
-				((u_char *)flattened)[s] = cdata[j];
-				break;
-			case 16:
-				sdata = (short *)buffer->data;
-				((short *)flattened)[s] = sdata[j];
-				break;
-			case 32:
-			default:
-				fdata = (float *)buffer->data;
-				((float *)flattened)[s] = fdata[j];
+	precision = audio_stream->precision;
+	total_samples = audio_stream->total_samples;
+	encoding = audio_stream->encoding;
+
+	if (encoding == CTRL_SLINEAR_LE || encoding == CTRL_SLINEAR_BE) {
+		if (precision == 8) {
+			cdata = (char *)full_sample;
+			for (i = 0; i < total_samples; i++) {
+				pcm[i] = (float)cdata[i] / 128.0f;
 			}
-			s++;
+		} else if (precision == 16) {
+			sdata = (short *)full_sample;
+			for (i = 0; i < total_samples; i++) {
+				pcm[i] = (float)sdata[i] / 32768.0f;
+			}
+		} else if (precision == 32) {
+			fdata = (float *)full_sample;
+			for (i = 0; i < total_samples; i++) {
+				pcm[i] = fdata[i] / 2147483647.0f;
+			}
+		} else {
+			return E_FREQ_UNKNOWN_PRECISION;
 		}
+	} else {
+		return E_FREQ_UNSUPPORTED_ENCODING;
 	}
-
-	return flattened;
+	return 0;
 }

@@ -1,51 +1,14 @@
 #include <curses.h>
 #include <stdlib.h>
 #include <math.h>
-#include <complex.h>
 
 #include "audio_ctrl.h"
 #include "audio_rms.h"
 #include "audio_stream.h"
 #include "draw.h"
 #include "error_codes.h"
+#include "fft.h"
 
-typedef double complex cplx;
-typedef struct bar_t {
-	float f_min;
-	float f_max;
-	int bin_count;
-	float magnitude;
-} bar_t;
-
-inline void _fft(cplx buf[], cplx out[], u_int n, u_int step)
-{
-	u_int i;
-	double PI;
-
-	PI = atan2(1, 1) * 4;
-
-	if (step < n) {
-		_fft(out, buf, n, step * 2);
-		_fft(out + step, buf + step, n, step * 2);
-		 
-		for (i = 0; i < n; i += 2 * step) {
-			cplx t = cexp(-I * PI * i / n) * out[i + step];
-			buf[i / 2]     = out[i] + t;
-			buf[(i + n)/2] = out[i] - t;
-		}
-	}
-}
- 
-inline void fft(cplx buf[], u_int n)
-{
-	u_int i;
-	cplx out[n];
-	for (i = 0; i < n; i++) {
-		out[i] = buf[i];
-	}
-	 
-	_fft(buf, out, n, 1);
-}
 
 /*
  * Print details about the audio controller
@@ -116,185 +79,127 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream)
 	}
 }
 
-inline int
-to_normalized_pcm(void *full_sample, float *pcm, audio_stream_t *audio_stream)
-{
-	u_int encoding, i, precision, total_samples;
-	char *cdata;
-	short *sdata;
-	float *fdata;
 
-	precision = audio_stream->precision;
-	total_samples = audio_stream->total_samples;
-	encoding = audio_stream->encoding;
-
-	if (encoding == CTRL_SLINEAR_LE || encoding == CTRL_SLINEAR_BE) {
-		if (precision == 8) {
-			cdata = (char *)full_sample;
-			for (i = 0; i < total_samples; i++) {
-				pcm[i] = (float)cdata[i] / 128.0f;
-			}
-		} else if (precision == 16) {
-			sdata = (short *)full_sample;
-			for (i = 0; i < total_samples; i++) {
-				pcm[i] = (float)sdata[i] / 32768.0f;
-			}
-		} else if (precision == 32) {
-			fdata = (float *)full_sample;
-			for (i = 0; i < total_samples; i++) {
-				pcm[i] = fdata[i] / 2147483647.0f;
-			}
-		} else {
-			return E_FREQ_UNKNOWN_PRECISION;
-		}
-	} else {
-		return E_FREQ_UNSUPPORTED_ENCODING;
-	}
-	return 0;
-}
-
-
-
+/*
+ * Displays a screen to record audio and display the data in the frequency
+ * spectrum.
+ *
+ * Wait for a user to press one of navigation options. Returns the pressed
+ * navigation option so the main routine can render the next screen
+ */
 int
-draw_frequency(audio_ctrl_t ctrl)
+draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t fft_config)
 {
 	char keypress;
-	int res, option, row;
+	int res, option, row, col;
 	u_int i, j, start;
 	float real, imag;
 	void *full_samples;
-	float *pcm;
-	/*
-	 * We have the total_samples (audio_stream.total_samples)
-	 * we have the size of the fft (1024 hard coded)
-	 * therefore there are total_samples / 1024 fft_frames we are going to compute
-	 * every frame has a start_idx / end_idx. that tells us where to look in the buffer
-	 */
-	//getmaxyx(stdscr, row, col);
-	row = getmaxy(stdscr);
-	//col = getmaxx(stdscr);
-	u_int bar_count = 50;
-	u_int fft_size = 1024;
-	u_int bins = fft_size / 2;
-	//u_int max_height = (u_int)row;
-	float f_min = 50.0f;
-	float f_max = (float)ctrl.config.sample_rate / 2.0f;
-	float avg[bins];
-	float max_avg = 0;
-	//float bars[bar_count];
-	bar_t bars[bar_count];
-	cplx buf[fft_size];
-	audio_stream_t audio_stream;
+	float pcm[audio_stream->total_samples];
+	bar_t bars[fft_config.bars];
+	bin_t bins[fft_config.bins];
+	cplx buf[fft_config.size];
 
-	res = build_stream_from_ctrl(ctrl, 250, &audio_stream);
-	if (res != 0) {
-		return res;
+	row = getmaxy(stdscr);
+	col = getmaxx(stdscr);
+
+	move(0,0);
+	full_samples = malloc(audio_stream->total_size);
+
+	for (i = 0; i < fft_config.bins; i++) {
+		bins[i].magnitude = 0.0f;
+		bins[i].frequency = (float)i * (float) fft_config.fs / (float) fft_config.size;
 	}
 
-	u_int frames = audio_stream.total_samples / fft_size;
-	float magnitudes[frames][bins];
+	for (i = 0; i < fft_config.bars; i++) {
+		float frac_start = (float)i / (float)fft_config.bars;
+		float frac_end = (float)(i+1) / (float)fft_config.bars;
+		bars[i].f_min = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_start);
+		bars[i].f_max = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_end);
+	}
 
 	nodelay(stdscr, TRUE);
 	for (;;) {
-		move(0, 0);
-		max_avg = 0;
-		for (i = 0; i < bar_count; i++) {
-			float frac_start = (float)i / (float)bar_count;
-			float frac_end = (float)(i+1) / (float)bar_count;
-			/*
-			float p = 2.0f;
-			float frac_start = powf((float)i / (float)bar_count, p);
-			float frac_end   = powf((float)(i + 1) / (float)bar_count, p);
-			*/
-			bars[i].f_min = f_min * powf(f_max / f_min, frac_start);
-			bars[i].f_max = f_min * powf(f_max / f_min, frac_end);
+		for (i = 0; i < fft_config.bins; i++) {
+			bins[i].magnitude = 0.0f;
+		}
+		for (i = 0; i < fft_config.bars; i++) {
 			bars[i].magnitude = 0.0f;
 			bars[i].bin_count = 0;
 		}
-		for (i = 0; i < bins; i++) {
-			avg[i] = 0;
-		}
 
-		res = stream(ctrl, &audio_stream);
+		res = stream(ctrl, audio_stream);
 		if (res != 0) {
 			return res;
 		}
 
-		full_samples = flatten_stream(&audio_stream);
-		pcm = malloc(sizeof(float) * audio_stream.total_samples);
-		if (to_normalized_pcm(full_samples, pcm, &audio_stream) > 0) {
+		flatten_stream(audio_stream, full_samples);
+		if (to_normalized_pcm(full_samples, pcm, audio_stream) > 0) {
 			free(full_samples);
-			free(pcm);
 			return res;
 		}
 
-		for (i = 0; i < frames; i++) {
-			start = i * fft_size;
+		/*
+		 * perform the fft for each frame.
+		 * place the magnitude in each bin
+		 */
+		for (i = 0; i < fft_config.frames; i++) {
+			start = i * fft_config.size;
 
-			/* initialize the fft in data */
-			for (j = 0; j < fft_size; j++) {
+			for (j = 0; j < fft_config.size; j++) {
 				buf[j] = pcm[start+j];
 			}
 
-			/* perform the fft */
-			fft(buf, fft_size);
+			fft(buf, fft_config.size);
 
-			/* get the magnitudes for each bin in the current frame */
-			/* calculate the running average */
-			for (j = 0; j < bins; j++) {
+			for (j = 0; j < fft_config.bins; j++) {
 				real = (float)creal(buf[j]);
 				imag = (float)cimag(buf[j]);
-				magnitudes[i][j] = sqrtf(real * real + imag * imag);
+				bins[j].magnitude += sqrtf(real * real + imag * imag);
 			}
 		}
 
-		/* calculate the average across all frames */
-		for (i = 0; i < frames; i++) {
-			for (j = 0; j < bins; j++) {
-				avg[j] += magnitudes[i][j];
-			}
-		}
-		for (j = 0; j < bins; j++) {
-			avg[j] = avg[j] / (float)frames;
-		}
-
-		for (i = 0; i < bins; i++) {
-			float freq = (float)i * (float)ctrl.config.sample_rate / (float)fft_size;
-			for (j = 0; j < bar_count; j++) {
+		/* Attribute a bin to the corresponding bar */
+		for (i = 0; i < fft_config.bins; i++) {
+			float freq = bins[i].frequency;
+			float avg = bins[i].magnitude / (float) fft_config.frames;
+			for (j = 0; j < fft_config.bars; j++) {
+				// TODO there is prolly some hashing function that
+				// lets me calculate the index instead of trying
+				// to iterate over the whole list every time
 				if (freq >= bars[j].f_min && freq < bars[j].f_max) {
-					bars[j].magnitude += avg[i];
+					bars[j].magnitude += avg;
 					bars[j].bin_count += 1;
 					break;
 				}
 			}
 		}
 
-		for (i = 0; i < bar_count; i++) {
-			if (max_avg < bars[i].magnitude / (float)bars[i].bin_count) {
-				max_avg = bars[i].magnitude / (float)bars[i].bin_count;
-			}
-		}
+		j = 0;
+		for (i = 0; i < fft_config.bars; i++) {
+			// TODO it would be great to move this to a separate pane
+			//mvprintw((int)i, 0, "%f - %f: %f / %d", bars[i].f_min, bars[i].f_max, bars[i].magnitude, bars[i].bin_count);
+			/*
+			 * Based on the number of bins / number of bars it is
+			 * possible that some bars just have no data. We are
+			 * going to skip drawing these so there are no gaps
+			 * in the bar graph
+			 */
+			if (bars[i].bin_count <= 0) continue;
 
-		for (i = 0; i < bar_count; i++) {
-			float a = bars[i].bin_count <= 0 ? 0 : bars[i].magnitude / (float)bars[i].bin_count;
+			float a = bars[i].magnitude / (float)bars[i].bin_count;
 			float scaled_magnitude = fminf(ceilf(a * 1.2f), (float)row);
-			//float scaled_magnitude = (a / max_avg) * (float) max_height;
-			//mvhline((int) i, 0, ' ', col);
-			//move((int)i, 0);
-			mvprintw((int)i, 0, "%f - %f: %f / %d", bars[i].f_min, bars[i].f_max, a, bars[i].bin_count);
-			//hline('=', (int)scaled_magnitude);
-			mvvline(0, (int)i+60, ' ', row);
-			mvvline(row-(int)scaled_magnitude, (int)i + 60, '|', (int)scaled_magnitude);
+			mvvline(0, (int)j+60, ' ', row);
+			mvvline(row-(int)scaled_magnitude, (int)j + 60, '|', (int)scaled_magnitude);
+			j++;
 		}
 		refresh();
-
-		free(pcm);
-		free(full_samples);
 
 		/* listen for input */
 		keypress = (char)getch();
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_FREQ) {
+			free(full_samples);
 			return option;
 		}
 	}
@@ -320,7 +225,7 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 	int option;
 	int res;
 	float rms, percent;
-	void *full_sample;
+	void *full_samples;
 
 	getmaxyx(stdscr, row, col);
 	y_padding = col / 10;
@@ -337,6 +242,7 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 	refresh();
 
 	nodelay(stdscr, TRUE);
+	full_samples = malloc(audio_stream->total_size);
 
 	for (;;) {
 		/* record the audio to the stream */
@@ -346,11 +252,10 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 		}
 
 		/* calculate rms */
-		full_sample = flatten_stream(audio_stream);
-		rms = calc_rms(full_sample, audio_stream->precision,
+		flatten_stream(audio_stream, full_samples);
+		rms = calc_rms(full_samples, audio_stream->precision,
 		    audio_stream->total_samples);
 		percent = calc_rms_percent(rms, audio_stream->precision);
-		free(full_sample);
 
 		if (percent < 0) {
 			return E_RMS_UNKNOWN_PRECISION;
@@ -370,6 +275,7 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 		keypress = (char)getch();
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_RECORD) {
+			free(full_samples);
 			return option;
 		}
 	}

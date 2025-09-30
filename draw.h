@@ -3,6 +3,7 @@
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
+#include "fft.h"
 
 #define DRAW_EXIT -1
 #define DRAW_RECORD 1
@@ -11,6 +12,6 @@
 
 int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream);
 int draw_intensity(audio_ctrl_t rctrl, audio_stream_t *audio_stream);
-int draw_frequency(audio_ctrl_t ctrl);
+int draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream, fft_config_t fft_config);
 void draw_options(void);
 #endif
