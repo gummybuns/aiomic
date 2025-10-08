@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "auconv.h"
 #include "audio_ctrl.h"
 #include "audio_stream.h"
 #include "error_codes.h"
@@ -133,7 +134,8 @@ clean_buffers(audio_stream_t *stream)
 }
 
 int
-flatten_stream(audio_stream_t *a_stream, void *flattened) {
+flatten_stream(audio_stream_t *a_stream, void *flattened)
+{
     u_int i;
     u_char *dst = (u_char *)flattened;
     audio_buffer_t *buffer;
@@ -147,40 +149,106 @@ flatten_stream(audio_stream_t *a_stream, void *flattened) {
     return 0;
 }
 
+static inline int
+build_converter(converter_t *converter, u_int precision, u_int encoding)
+{
+	converter->swap_func = NULL;
+	converter->sign_func = NULL;
+	converter->normalize_func = NULL;
+
+	switch (encoding) {
+	case CTRL_SLINEAR_LE:
+	case CTRL_ULINEAR_LE:
+		if (BYTE_ORDER == BIG_ENDIAN) {
+			if (precision == 8) {
+				converter->swap_func = NULL;
+			} else if (precision == 16) {
+				converter->swap_func = swap_bytes;
+			} else if (precision == 32) {
+				converter->swap_func = swap_bytes32;
+			} else {
+				return E_FREQ_UNKNOWN_PRECISION;
+			}
+		}
+		break;
+	case CTRL_SLINEAR_BE:
+	case CTRL_ULINEAR_BE:
+		if (BYTE_ORDER == LITTLE_ENDIAN) {
+			if (precision == 8) {
+				converter->swap_func = NULL;
+			} else if (precision == 16) {
+				converter->swap_func = swap_bytes;
+			} else if (precision == 32) {
+				converter->swap_func = swap_bytes32;
+			} else {
+				return E_FREQ_UNKNOWN_PRECISION;
+
+			}
+		}
+		break;
+	case CTRL_ULINEAR:
+	case CTRL_SLINEAR:
+		if (precision == 8) {
+			converter->sign_func = change_sign8;
+		} else if (precision == 16 && BYTE_ORDER == LITTLE_ENDIAN) {
+			converter->sign_func = change_sign16_le;
+		} else if (precision == 16 && BYTE_ORDER == BIG_ENDIAN) {
+			converter->sign_func = change_sign16_be;
+		} else if (precision == 32 && BYTE_ORDER == LITTLE_ENDIAN) {
+			converter->sign_func = change_sign32_le;
+		} else if (precision == 32 && BYTE_ORDER == BIG_ENDIAN) {
+			converter->sign_func = change_sign32_be;
+		} else {
+			return E_FREQ_UNKNOWN_PRECISION;
+		}
+		break;
+	default:
+		return E_FREQ_UNSUPPORTED_ENCODING;
+	}
+
+	if (precision == 8) {
+		converter->normalize_func = normalize8;
+	} else if (precision == 16) {
+		converter->normalize_func = normalize16;
+	} else if (precision == 32) {
+		converter->normalize_func = normalize32;
+	} else {
+		return E_FREQ_UNKNOWN_PRECISION;
+	}
+
+	return 0;
+}
 
 int
 to_normalized_pcm(void *full_sample, float *pcm, audio_stream_t *audio_stream)
 {
-	u_int encoding, i, precision, total_samples;
-	char *cdata;
-	short *sdata;
-	float *fdata;
+	u_int encoding, i, j, precision, total_samples;
+	void (*conv_func) (u_char *, int);
+	u_char *cdata, *c;
+	converter_t converter;
+	u_int inc;
 
 	precision = audio_stream->precision;
 	total_samples = audio_stream->total_samples;
 	encoding = audio_stream->encoding;
 
-	if (encoding == CTRL_SLINEAR_LE || encoding == CTRL_SLINEAR_BE) {
-		if (precision == 8) {
-			cdata = (char *)full_sample;
-			for (i = 0; i < total_samples; i++) {
-				pcm[i] = (float)cdata[i] / 128.0f;
-			}
-		} else if (precision == 16) {
-			sdata = (short *)full_sample;
-			for (i = 0; i < total_samples; i++) {
-				pcm[i] = (float)sdata[i] / 32768.0f;
-			}
-		} else if (precision == 32) {
-			fdata = (float *)full_sample;
-			for (i = 0; i < total_samples; i++) {
-				pcm[i] = fdata[i] / 2147483647.0f;
-			}
-		} else {
-			return E_FREQ_UNKNOWN_PRECISION;
+	build_converter(&converter, precision, encoding);
+
+	inc = precision / STREAM_BYTE_SIZE;
+	cdata = (u_char *)full_sample;
+	c = cdata;
+	j = 0;
+	for (i = 0; i < audio_stream->total_size; i += inc) {
+		if (converter.swap_func != NULL) {
+			converter.swap_func(c);
 		}
-	} else {
-		return E_FREQ_UNSUPPORTED_ENCODING;
+		if (converter.sign_func != NULL) {
+			converter.sign_func(c);
+		}
+		pcm[j] = converter.normalize_func(c);
+
+		j++;
+		c += inc;
 	}
 	return 0;
 }

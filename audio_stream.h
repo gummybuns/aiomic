@@ -23,6 +23,12 @@ typedef struct audios_stream_t {
 	audio_buffer_t **buffers; /* the buffers that hold the data */
 } audio_stream_t;
 
+typedef struct converter_t {
+	void (*swap_func) (u_char *);
+	void (*sign_func) (u_char *);
+	float (*normalize_func) (u_char *);
+} converter_t;
+
 int build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
     u_int buffer_size, u_int precision, u_int encoding, audio_stream_t *stream);
 
