@@ -56,6 +56,26 @@ check_options(int keypress)
 	}
 }
 
+int
+build_draw_config(draw_config_t * config)
+{
+	int rows, cols, x_padding, y_padding;
+
+	getmaxyx(stdscr, rows, cols);
+	x_padding = cols * PADDING_PCT;
+	y_padding = rows * PADDING_PCT;
+
+	config->rows = rows;
+	config->cols = cols;
+	config->x_padding = x_padding;
+	config->y_padding = (u_int)y_padding;
+	config->max_h = rows - y_padding * 2;
+	config->max_w = cols - x_padding * 2;
+	config->bars = config->max_w;
+
+	return 0;
+}
+
 /*
  * Display information about the audio controlers + streams
  *
@@ -89,32 +109,27 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t fft_config)
+draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
-	int res, option, row, col;
+	int res, option, active_bars, draw_start, title_center;
 	u_int i, j, start;
 	float real, imag;
 	void *full_samples;
 	float pcm[audio_stream->total_samples];
-	bar_t bars[fft_config.bars];
+	bar_t bars[draw_config.bars];
 	bin_t bins[fft_config.bins];
 	cplx buf[fft_config.size];
 
-	row = getmaxy(stdscr);
-	col = getmaxx(stdscr);
-
-	move(0,0);
+	title_center = draw_config.cols / 2 - 10;
 	full_samples = malloc(audio_stream->total_size);
 
-	for (i = 0; i < fft_config.bins; i++) {
-		bins[i].magnitude = 0.0f;
-		bins[i].frequency = (float)i * (float) fft_config.fs / (float) fft_config.size;
-	}
+	mvprintw(0, title_center, "Measure Mic Frequency\n");
+	refresh();
 
-	for (i = 0; i < fft_config.bars; i++) {
-		float frac_start = (float)i / (float)fft_config.bars;
-		float frac_end = (float)(i+1) / (float)fft_config.bars;
+	for (i = 0; i < draw_config.bars; i++) {
+		float frac_start = (float)i / (float)draw_config.bars;
+		float frac_end = (float)(i+1) / (float)draw_config.bars;
 		bars[i].f_min = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_start);
 		bars[i].f_max = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_end);
 	}
@@ -123,18 +138,20 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 	for (;;) {
 		for (i = 0; i < fft_config.bins; i++) {
 			bins[i].magnitude = 0.0f;
+			bins[i].frequency = (float)i * (float) fft_config.fs / (float) fft_config.size;
 		}
-		for (i = 0; i < fft_config.bars; i++) {
+		for (i = 0; i < draw_config.bars; i++) {
 			bars[i].magnitude = 0.0f;
 			bars[i].bin_count = 0;
 		}
 
-		res = stream(ctrl, audio_stream);
-		if (res != 0) {
+		if((res = stream(ctrl, audio_stream)) != 0) {
 			return res;
 		}
 
-		flatten_stream(audio_stream, full_samples);
+		if ((res = flatten_stream(audio_stream, full_samples)) != 0) {
+			return res;
+		}
 		if ((res = to_normalized_pcm(full_samples, pcm, audio_stream)) > 0) {
 			free(full_samples);
 			return res;
@@ -164,10 +181,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 		for (i = 0; i < fft_config.bins; i++) {
 			float freq = bins[i].frequency;
 			float avg = bins[i].magnitude / (float) fft_config.frames;
-			for (j = 0; j < fft_config.bars; j++) {
-				// TODO there is prolly some hashing function that
-				// lets me calculate the index instead of trying
-				// to iterate over the whole list every time
+			for (j = 0; j < draw_config.bars; j++) {
 				if (freq >= bars[j].f_min && freq < bars[j].f_max) {
 					bars[j].magnitude += avg;
 					bars[j].bin_count += 1;
@@ -176,10 +190,8 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 			}
 		}
 
-		j = 0;
-		for (i = 0; i < fft_config.bars; i++) {
-			// TODO it would be great to move this to a separate pane
-			//mvprintw((int)i, 0, "%f - %f: %f / %d", bars[i].f_min, bars[i].f_max, bars[i].magnitude, bars[i].bin_count);
+		active_bars = 0;
+		for(i = 0; i < draw_config.bars; i++) {
 			/*
 			 * Based on the number of bins / number of bars it is
 			 * possible that some bars just have no data. We are
@@ -187,11 +199,20 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 			 * in the bar graph
 			 */
 			if (bars[i].bin_count <= 0) continue;
+			active_bars++;
+		}
+
+		draw_start = draw_config.x_padding + (draw_config.max_w - active_bars) / 2;
+		j = 0;
+		for (i = 0; i < draw_config.bars; i++) {
+			// TODO it would be great to move this to a separate pane
+			//mvprintw((int)i, 0, "%f - %f: %f / %d", bars[i].f_min, bars[i].f_max, bars[i].magnitude, bars[i].bin_count);
+			if (bars[i].bin_count <= 0) continue;
 
 			float a = bars[i].magnitude / (float)bars[i].bin_count;
-			float scaled_magnitude = fminf(ceilf(a * 1.2f), (float)row);
-			mvvline(0, (int)j+60, ' ', row);
-			mvvline(row-(int)scaled_magnitude, (int)j + 60, '|', (int)scaled_magnitude);
+			float scaled_magnitude = fminf(ceilf(a * 1.2f), (float)draw_config.max_h - (float)draw_config.y_padding);
+			mvvline(draw_config.y_padding, (int)j+draw_start, ' ', draw_config.max_h);
+			mvvline(draw_config.max_h-(int)scaled_magnitude, (int)j + draw_start, '|', (int)scaled_magnitude);
 			j++;
 		}
 		refresh();

@@ -1,7 +1,8 @@
 #include "fft.h"
 #include <math.h>
 
-inline void _fft(cplx *buf, cplx *out, u_int n, u_int step)
+inline void
+_fft(cplx *buf, cplx *out, u_int n, u_int step)
 {
 	u_int i;
 	double PI;
@@ -20,7 +21,8 @@ inline void _fft(cplx *buf, cplx *out, u_int n, u_int step)
 	}
 }
  
-inline void fft(cplx *buf, u_int n)
+inline void
+fft(cplx *buf, u_int n)
 {
 	u_int i;
 	cplx out[n];
@@ -29,4 +31,18 @@ inline void fft(cplx *buf, u_int n)
 	}
 	 
 	_fft(buf, out, n, 1);
+}
+
+int
+build_fft_config(fft_config_t  *config, u_int size, u_int bins, u_int fs, u_int total_samples, float f_min)
+{
+	config->size = size;
+	config->bins = bins;
+	config->f_min = f_min;
+	config->fs = fs;
+	config->f_max = (float)fs / 2.0f;
+	config->total_samples = total_samples;
+	config->frames = total_samples / size;
+
+	return 0;
 }

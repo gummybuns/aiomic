@@ -26,6 +26,7 @@ main(int argc, char *argv[])
 	audio_ctrl_t rctrl;
 	audio_stream_t rstream;
 	fft_config_t fft_config;
+	draw_config_t draw_config;
 
 	setprogname(argv[0]);
 
@@ -53,14 +54,8 @@ main(int argc, char *argv[])
 
 	option = DRAW_RECORD;
 
-	fft_config.bars = DEFAULT_BAR_COUNT;
-	fft_config.size = DEFAULT_FFT_SIZE;
-	fft_config.bins = DEFAULT_BIN_SIZE;
-	fft_config.f_min = DEFAULT_F_MIN;
-	fft_config.f_max = (float)rctrl.config.sample_rate / 2.0f;
-	fft_config.fs = rctrl.config.sample_rate;
-	fft_config.total_samples = rstream.total_samples;
-	fft_config.frames = fft_config.total_samples / fft_config.size;
+	build_fft_config(&fft_config, DEFAULT_FFT_SIZE, DEFAULT_BIN_SIZE, rctrl.config.sample_rate, rstream.total_samples, DEFAULT_F_MIN);
+	build_draw_config(&draw_config);
 
 	for (;;) {
 		draw_options();
@@ -74,7 +69,7 @@ main(int argc, char *argv[])
 		} else if (option == DRAW_INFO) {
 			option = draw_info(rctrl, rstream);
 		} else if(option == DRAW_FREQ) {
-			option = draw_frequency(rctrl, &rstream, fft_config);
+			option = draw_frequency(rctrl, &rstream, fft_config, draw_config);
 		} else {
 			break;
 		}
