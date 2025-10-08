@@ -8,6 +8,7 @@
 #include "draw.h"
 #include "error_codes.h"
 #include "fft.h"
+#include "pcm.h"
 
 
 /*
@@ -134,7 +135,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 		}
 
 		flatten_stream(audio_stream, full_samples);
-		if (to_normalized_pcm(full_samples, pcm, audio_stream) > 0) {
+		if ((res = to_normalized_pcm(full_samples, pcm, audio_stream)) > 0) {
 			free(full_samples);
 			return res;
 		}
