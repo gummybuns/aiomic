@@ -27,4 +27,5 @@ typedef struct fft_config_t {
 
 void fft(cplx *buf, u_int n);
 int build_fft_config(fft_config_t *config, u_int size, u_int bins, u_int fs, u_int total_samples, float f_min);
+int reset_bins(bin_t *bins, fft_config_t config);
 #endif

@@ -101,6 +101,20 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream)
 }
 
 
+inline int
+reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
+{
+	u_int i;
+	for (i = 0; i < draw_config.bars; i++) {
+		float frac_start = (float)i / (float)draw_config.bars;
+		float frac_end = (float)(i+1) / (float)draw_config.bars;
+		bars[i].f_min = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_start);
+		bars[i].f_max = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_end);
+		bars[i].magnitude = 0.0f;
+		bars[i].bin_count = 0;
+	}
+}
+
 /*
  * Displays a screen to record audio and display the data in the frequency
  * spectrum.
@@ -127,23 +141,10 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 	mvprintw(0, title_center, "Measure Mic Frequency\n");
 	refresh();
 
-	for (i = 0; i < draw_config.bars; i++) {
-		float frac_start = (float)i / (float)draw_config.bars;
-		float frac_end = (float)(i+1) / (float)draw_config.bars;
-		bars[i].f_min = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_start);
-		bars[i].f_max = fft_config.f_min * powf(fft_config.f_max / fft_config.f_min, frac_end);
-	}
-
 	nodelay(stdscr, TRUE);
 	for (;;) {
-		for (i = 0; i < fft_config.bins; i++) {
-			bins[i].magnitude = 0.0f;
-			bins[i].frequency = (float)i * (float) fft_config.fs / (float) fft_config.size;
-		}
-		for (i = 0; i < draw_config.bars; i++) {
-			bars[i].magnitude = 0.0f;
-			bars[i].bin_count = 0;
-		}
+		reset_bins(bins, fft_config);
+		reset_bars(bars, draw_config, fft_config);
 
 		if((res = stream(ctrl, audio_stream)) != 0) {
 			return res;

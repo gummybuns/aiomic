@@ -46,3 +46,16 @@ build_fft_config(fft_config_t  *config, u_int size, u_int bins, u_int fs, u_int 
 
 	return 0;
 }
+
+int
+reset_bins(bin_t *bins, fft_config_t config)
+{
+	u_int i;
+
+	for (i = 0; i < config.bins; i++) {
+		bins[i].magnitude = 0.0f;
+		bins[i].frequency = (float)i * (float) config.fs / (float) config.size;
+	}
+
+}
+
