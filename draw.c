@@ -158,33 +158,14 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 			return res;
 		}
 
-		/*
-		 * perform the fft for each frame.
-		 * place the magnitude in each bin
-		 */
-		for (i = 0; i < fft_config.frames; i++) {
-			start = i * fft_config.size;
-
-			for (j = 0; j < fft_config.size; j++) {
-				buf[j] = pcm[start+j];
-			}
-
-			fft(buf, fft_config.size);
-
-			for (j = 0; j < fft_config.bins; j++) {
-				real = (float)creal(buf[j]);
-				imag = (float)cimag(buf[j]);
-				bins[j].magnitude += sqrtf(real * real + imag * imag);
-			}
-		}
+		fft(fft_config, bins, pcm);
 
 		/* Attribute a bin to the corresponding bar */
 		for (i = 0; i < fft_config.bins; i++) {
 			float freq = bins[i].frequency;
-			float avg = bins[i].magnitude / (float) fft_config.frames;
 			for (j = 0; j < draw_config.bars; j++) {
 				if (freq >= bars[j].f_min && freq < bars[j].f_max) {
-					bars[j].magnitude += avg;
+					bars[j].magnitude += bins[i].magnitude;
 					bars[j].bin_count += 1;
 					break;
 				}

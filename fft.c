@@ -20,17 +20,36 @@ _fft(cplx *buf, cplx *out, u_int n, u_int step)
 		}
 	}
 }
- 
-inline void
-fft(cplx *buf, u_int n)
+
+int
+fft(fft_config_t config, bin_t *bins, float *pcm)
 {
-	u_int i;
-	cplx out[n];
-	for (i = 0; i < n; i++) {
-		out[i] = buf[i];
+	u_int i, j, start;
+	float real, imag;
+	cplx buf[config.size];
+	cplx out[config.size];
+
+	for (i = 0; i < config.frames; i++) {
+		start = i * config.size;
+		for (j = 0; j < config.size; j++) {
+			buf[j] = pcm[start+j];
+			out[j] = pcm[start+j];
+		}
+
+		_fft(buf, out, config.size, 1);
+
+		for (j = 0; j < config.bins; j++) {
+			real = (float)creal(buf[j]);
+			imag = (float)cimag(buf[j]);
+			bins[j].magnitude += sqrtf(real * real + imag * imag);
+		}
 	}
-	 
-	_fft(buf, out, n, 1);
+
+	for (i = 0; i < config.bins; i++) {
+		bins[i].magnitude = bins[i].magnitude / (float) config.frames;
+	}
+
+	return 0;
 }
 
 int
