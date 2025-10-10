@@ -59,18 +59,19 @@ check_options(int keypress)
 int
 build_draw_config(draw_config_t * config)
 {
-	int rows, cols, x_padding, y_padding;
+	int rows, cols;
+	u_int x_padding, y_padding;
 
 	getmaxyx(stdscr, rows, cols);
-	x_padding = cols * PADDING_PCT;
-	y_padding = rows * PADDING_PCT;
+	x_padding = (u_int)((float)cols * PADDING_PCT);
+	y_padding = (u_int)((float)rows * PADDING_PCT);
 
-	config->rows = rows;
-	config->cols = cols;
+	config->rows = (u_int)rows;
+	config->cols = (u_int)cols;
 	config->x_padding = x_padding;
-	config->y_padding = (u_int)y_padding;
-	config->max_h = rows - y_padding * 2;
-	config->max_w = cols - x_padding * 2;
+	config->y_padding = y_padding;
+	config->max_h = (u_int)rows - y_padding * 2;
+	config->max_w = (u_int)cols - x_padding * 2;
 	config->bars = config->max_w;
 
 	return 0;
@@ -113,6 +114,8 @@ reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
 		bars[i].magnitude = 0.0f;
 		bars[i].bin_count = 0;
 	}
+
+	return 0;
 }
 
 /*
@@ -126,17 +129,15 @@ int
 draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
-	int res, option, active_bars, draw_start, title_center;
-	u_int i, j, start;
-	float real, imag;
+	int draw_start, option, res;
+	u_int active_bars, i, j, title_center;
 	float pcm[audio_stream->total_samples];
 	bar_t bars[draw_config.bars];
 	bin_t bins[fft_config.bins];
-	cplx buf[fft_config.size];
 
 	title_center = draw_config.cols / 2 - 10;
 
-	mvprintw(0, title_center, "Measure Mic Frequency\n");
+	mvprintw(0, (int)title_center, "Measure Mic Frequency\n");
 	refresh();
 
 	nodelay(stdscr, TRUE);
@@ -178,7 +179,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 			active_bars++;
 		}
 
-		draw_start = draw_config.x_padding + (draw_config.max_w - active_bars) / 2;
+		draw_start = (int)draw_config.x_padding + (int)(draw_config.max_w - active_bars) / 2;
 		j = 0;
 		for (i = 0; i < draw_config.bars; i++) {
 			// TODO it would be great to move this to a separate pane
@@ -187,8 +188,8 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 
 			float a = bars[i].magnitude / (float)bars[i].bin_count;
 			float scaled_magnitude = fminf(ceilf(a * 1.2f), (float)draw_config.max_h - (float)draw_config.y_padding);
-			mvvline(draw_config.y_padding, (int)j+draw_start, ' ', draw_config.max_h);
-			mvvline(draw_config.max_h-(int)scaled_magnitude, (int)j + draw_start, '|', (int)scaled_magnitude);
+			mvvline((int)draw_config.y_padding, (int)j+draw_start, ' ', (int)draw_config.max_h);
+			mvvline((int)draw_config.max_h-(int)scaled_magnitude, (int)j + draw_start, '|', (int)scaled_magnitude);
 			j++;
 		}
 		refresh();

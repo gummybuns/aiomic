@@ -76,5 +76,6 @@ reset_bins(bin_t *bins, fft_config_t config)
 		bins[i].frequency = (float)i * (float) config.fs / (float) config.size;
 	}
 
+	return 0;
 }
 

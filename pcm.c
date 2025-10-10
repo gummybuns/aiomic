@@ -125,14 +125,13 @@ build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
 int
 to_normalized_pcm(audio_stream_t *audio_stream, float *pcm)
 {
-	u_int encoding, i, j, precision, total_samples;
+	u_int encoding, i, j, precision;
 	u_char *c;
 	u_int inc;
 	int err;
 	pcm_converter_t converter;
 
 	precision = audio_stream->precision;
-	total_samples = audio_stream->total_samples;
 	encoding = audio_stream->encoding;
 
 	if((err = build_converter(&converter, precision, encoding)) > 0) {

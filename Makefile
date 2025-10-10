@@ -6,7 +6,7 @@ SRCS+=	main.c audio_ctrl.c audio_stream.c audio_rms.c draw.c fft.c pcm.c
 LDADD+=	-lcurses -lm -g
 DPADD+=	${LIBCURSES} ${LIBM}
 
-#WARNS=	6
+WARNS=	6
 
 .include <bsd.prog.mk>
 

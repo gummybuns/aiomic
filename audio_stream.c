@@ -46,14 +46,12 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
 	u_int nsamples, size;
 	float samples_needed;
 	float samples_per_buffer;
-	float buffers_needed;
 
 	samples_needed = ceilf(
 	    (float)milliseconds / 1000 * (float)sample_rate * (float)channels);
 	bytes_per_sample = precision / STREAM_BYTE_SIZE;
 	samples_per_buffer =
 	    ceilf((float)buffer_size / (float)bytes_per_sample);
-	buffers_needed = ceilf(samples_needed / samples_per_buffer);
 
 	stream->milliseconds = milliseconds;
 	stream->channels = channels;
@@ -89,7 +87,7 @@ stream(audio_ctrl_t ctrl, audio_stream_t *stream)
 	ssize_t io_count;
 	io_count = 0;
 
-	data = (char *)stream->data;
+	data = (u_char *)stream->data;
 	for (i = 0; i < stream->total_size; i++) {
 		/* the size of the buffer or whats left */
 		ns = (u_int)fminf((float)ctrl.config.buffer_size, (float)(stream->total_size - i));
@@ -97,6 +95,10 @@ stream(audio_ctrl_t ctrl, audio_stream_t *stream)
 			io_count = read(ctrl.fd, data, ns);
 		} else {
 			io_count = write(ctrl.fd, data, ns);
+		}
+
+		if (io_count < 0) {
+			return E_STREAM_IO_ERROR;
 		}
 
 		i += ns;
