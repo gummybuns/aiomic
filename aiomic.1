@@ -48,13 +48,11 @@ recording devices.
 .Nm
 continually captures input from the
 .Ar device
-and measures the Root Mean Square of the collected samples.
-.Pp
-.Nm
-uses the existing configuration of the
+and renders different visualizations of that data using the existing
+configuration of the
 .Ar device
-and displays the RMS as a
-percentage of the maximum value based on the device's precision.
+as specified in
+.Xr audiocfg 1
 .Pp
 The following options are available:
 .Bl -tag -width indent
@@ -66,7 +64,10 @@ The recording audio device. Write access to the device is required.
 uses the following keys for navigation:
 .Bl -tag -width indent
 .It R
-View the RMS of the recorded audio.
+View the RMS of the recorded audio. and displays the RMS as a percentage of the
+maximum value based on the device's precision.
+.It F
+View the Frequency domain of the recorded audio.
 .It I
 View configuration details of the
 .Ar device .
@@ -76,6 +77,7 @@ Exit the application.
 .Dl aiomic /dev/audio2
 .Sh SEE ALSO
 .Xr audio 4
+.Xr audiocfg 1
 .Sh AUTHORS
 .Nm
 was written by
