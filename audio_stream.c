@@ -43,11 +43,10 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
 {
 	u_int i;
 	u_int bytes_per_sample;
-	u_int nsamples;
+	u_int nsamples, size;
 	float samples_needed;
 	float samples_per_buffer;
 	float buffers_needed;
-	audio_buffer_t *buffer;
 
 	samples_needed = ceilf(
 	    (float)milliseconds / 1000 * (float)sample_rate * (float)channels);
@@ -59,29 +58,19 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
 	stream->milliseconds = milliseconds;
 	stream->channels = channels;
 	stream->encoding = encoding;
-	stream->buffers =
-	    malloc((size_t)buffers_needed * sizeof(audio_buffer_t *));
 	stream->total_samples = (u_int)samples_needed;
 	stream->precision = precision;
-	stream->buffer_count = 0;
 	stream->total_size = 0;
 
 	i = (u_int)samples_needed;
 	while (i > 0) {
-		buffer = malloc(sizeof(audio_buffer_t));
-
 		/* the size of the buffer is samples_per_buffer or whats left */
 		nsamples = (u_int)fminf((float)i, samples_per_buffer);
-
-		buffer->size = nsamples * bytes_per_sample;
-		buffer->precision = precision;
-		buffer->samples = nsamples;
-		buffer->data = malloc(buffer->size);
-		stream->buffers[stream->buffer_count] = buffer;
-		stream->buffer_count++;
-		stream->total_size += buffer->size;
+		size = nsamples * bytes_per_sample;
+		stream->total_size += size;
 		i = i - nsamples;
 	}
+	stream->data = malloc(stream->total_size);
 
 	return 0;
 }
@@ -95,56 +84,24 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
 int
 stream(audio_ctrl_t ctrl, audio_stream_t *stream)
 {
-	u_int i;
+	u_int i, ns;
+	u_char *data;
 	ssize_t io_count;
 	io_count = 0;
 
-	for (i = 0; i < stream->buffer_count; i++) {
-		audio_buffer_t *buffer = stream->buffers[i];
-
+	data = (char *)stream->data;
+	for (i = 0; i < stream->total_size; i++) {
+		/* the size of the buffer or whats left */
+		ns = (u_int)fminf((float)ctrl.config.buffer_size, (float)(stream->total_size - i));
 		if (ctrl.mode == CTRL_RECORD) {
-			io_count = read(ctrl.fd, buffer->data, buffer->size);
+			io_count = read(ctrl.fd, data, ns);
 		} else {
-			io_count = write(ctrl.fd, buffer->data, buffer->size);
+			io_count = write(ctrl.fd, data, ns);
 		}
 
-		if (io_count < 0) {
-			return E_STREAM_IO_ERROR;
-		}
+		i += ns;
+		data += ns;
 	}
 
 	return 0;
-}
-
-/*
- * Free up all buffers on the stream
- */
-int
-clean_buffers(audio_stream_t *stream)
-{
-	u_int i;
-
-	for (i = 0; i < stream->buffer_count; i++) {
-		free(stream->buffers[i]->data);
-		free(stream->buffers[i]);
-	}
-	free(stream->buffers);
-
-	return 0;
-}
-
-int
-flatten_stream(audio_stream_t *a_stream, void *flattened)
-{
-    u_int i;
-    u_char *dst = (u_char *)flattened;
-    audio_buffer_t *buffer;
-
-    for (i = 0; i < a_stream->buffer_count; i++) {
-        buffer = a_stream->buffers[i];
-        memcpy(dst, buffer->data, buffer->size);
-        dst += buffer->size;
-    }
-
-    return 0;
 }

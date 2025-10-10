@@ -129,14 +129,12 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 	int res, option, active_bars, draw_start, title_center;
 	u_int i, j, start;
 	float real, imag;
-	void *full_samples;
 	float pcm[audio_stream->total_samples];
 	bar_t bars[draw_config.bars];
 	bin_t bins[fft_config.bins];
 	cplx buf[fft_config.size];
 
 	title_center = draw_config.cols / 2 - 10;
-	full_samples = malloc(audio_stream->total_size);
 
 	mvprintw(0, title_center, "Measure Mic Frequency\n");
 	refresh();
@@ -150,11 +148,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 			return res;
 		}
 
-		if ((res = flatten_stream(audio_stream, full_samples)) != 0) {
-			return res;
-		}
-		if ((res = to_normalized_pcm(full_samples, pcm, audio_stream)) > 0) {
-			free(full_samples);
+		if ((res = to_normalized_pcm(audio_stream->data, pcm, audio_stream)) > 0) {
 			return res;
 		}
 
@@ -203,7 +197,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 		keypress = (char)getch();
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_FREQ) {
-			free(full_samples);
 			return option;
 		}
 	}
@@ -229,7 +222,6 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 	int option;
 	int res;
 	float rms, percent;
-	void *full_samples;
 
 	getmaxyx(stdscr, row, col);
 	y_padding = col / 10;
@@ -246,7 +238,6 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 	refresh();
 
 	nodelay(stdscr, TRUE);
-	full_samples = malloc(audio_stream->total_size);
 
 	for (;;) {
 		/* record the audio to the stream */
@@ -256,8 +247,7 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 		}
 
 		/* calculate rms */
-		flatten_stream(audio_stream, full_samples);
-		rms = calc_rms(full_samples, audio_stream->precision,
+		rms = calc_rms(audio_stream->data, audio_stream->precision,
 		    audio_stream->total_samples);
 		percent = calc_rms_percent(rms, audio_stream->precision);
 
@@ -279,7 +269,6 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 		keypress = (char)getch();
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_RECORD) {
-			free(full_samples);
 			return option;
 		}
 	}

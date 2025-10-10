@@ -76,7 +76,6 @@ main(int argc, char *argv[])
 		clear();
 	}
 
-	clean_buffers(&rstream);
 	endwin();
 	return 0;
 }
