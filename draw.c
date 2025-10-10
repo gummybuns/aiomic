@@ -148,7 +148,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t * audio_stream, fft_config_t ff
 			return res;
 		}
 
-		if ((res = to_normalized_pcm(audio_stream->data, pcm, audio_stream)) > 0) {
+		if ((res = to_normalized_pcm(audio_stream, pcm)) > 0) {
 			return res;
 		}
 
