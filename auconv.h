@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/types.h>
 #include <sys/audioio.h>
+#include <sys/types.h>
 
 /* Convert between signed and unsigned. */
 static inline void change_sign8(u_char *);

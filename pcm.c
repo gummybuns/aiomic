@@ -1,10 +1,10 @@
-#include <curses.h>
+#include "pcm.h"
 #include "auconv.h"
 #include "error_codes.h"
-#include "pcm.h"
+#include <curses.h>
 
 static inline int
-set_swap_func(pcm_converter_t * converter, u_int precision, u_int encoding)
+set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 {
 	converter->swap_func = NULL;
 
@@ -37,7 +37,6 @@ set_swap_func(pcm_converter_t * converter, u_int precision, u_int encoding)
 				converter->swap_func = swap_bytes32;
 			} else {
 				return E_FREQ_UNKNOWN_PRECISION;
-
 			}
 		}
 		break;
@@ -85,7 +84,7 @@ set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 static inline int
 set_normalize_func(pcm_converter_t *converter, u_int precision)
 {
-	switch(precision) {
+	switch (precision) {
 	case 8:
 		converter->normalize_func = normalize8;
 		break;
@@ -97,7 +96,7 @@ set_normalize_func(pcm_converter_t *converter, u_int precision)
 		break;
 	default:
 		return E_FREQ_UNKNOWN_PRECISION;
-	}	
+	}
 
 	return 0;
 }
@@ -134,7 +133,7 @@ to_normalized_pcm(audio_stream_t *audio_stream, float *pcm)
 	precision = audio_stream->precision;
 	encoding = audio_stream->encoding;
 
-	if((err = build_converter(&converter, precision, encoding)) > 0) {
+	if ((err = build_converter(&converter, precision, encoding)) > 0) {
 		return err;
 	}
 

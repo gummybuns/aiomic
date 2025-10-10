@@ -47,14 +47,14 @@ main(int argc, char *argv[])
 		err(1, "Failed to build audio stream: %d", res);
 	}
 
-
 	initscr();
 	raw();
 	noecho();
 
 	option = DRAW_RECORD;
 
-	build_fft_config(&fft_config, DEFAULT_FFT_SIZE, DEFAULT_BIN_SIZE, rctrl.config.sample_rate, rstream.total_samples, DEFAULT_F_MIN);
+	build_fft_config(&fft_config, DEFAULT_FFT_SIZE, DEFAULT_BIN_SIZE,
+	    rctrl.config.sample_rate, rstream.total_samples, DEFAULT_F_MIN);
 	build_draw_config(&draw_config);
 
 	for (;;) {
@@ -68,8 +68,9 @@ main(int argc, char *argv[])
 			option = draw_intensity(rctrl, &rstream);
 		} else if (option == DRAW_INFO) {
 			option = draw_info(rctrl, rstream);
-		} else if(option == DRAW_FREQ) {
-			option = draw_frequency(rctrl, &rstream, fft_config, draw_config);
+		} else if (option == DRAW_FREQ) {
+			option = draw_frequency(rctrl, &rstream, fft_config,
+			    draw_config);
 		} else {
 			break;
 		}

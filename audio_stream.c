@@ -90,7 +90,8 @@ stream(audio_ctrl_t ctrl, audio_stream_t *stream)
 	data = (u_char *)stream->data;
 	for (i = 0; i < stream->total_size; i++) {
 		/* the size of the buffer or whats left */
-		ns = (u_int)fminf((float)ctrl.config.buffer_size, (float)(stream->total_size - i));
+		ns = (u_int)fminf((float)ctrl.config.buffer_size,
+		    (float)(stream->total_size - i));
 		if (ctrl.mode == CTRL_RECORD) {
 			io_count = read(ctrl.fd, data, ns);
 		} else {

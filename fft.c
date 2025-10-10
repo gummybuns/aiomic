@@ -12,11 +12,11 @@ _fft(cplx *buf, cplx *out, u_int n, u_int step)
 	if (step < n) {
 		_fft(out, buf, n, step * 2);
 		_fft(out + step, buf + step, n, step * 2);
-		 
+
 		for (i = 0; i < n; i += 2 * step) {
 			cplx t = cexp(-I * PI * i / n) * out[i + step];
-			buf[i / 2]     = out[i] + t;
-			buf[(i + n)/2] = out[i] - t;
+			buf[i / 2] = out[i] + t;
+			buf[(i + n) / 2] = out[i] - t;
 		}
 	}
 }
@@ -32,8 +32,8 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
 	for (i = 0; i < config.frames; i++) {
 		start = i * config.size;
 		for (j = 0; j < config.size; j++) {
-			buf[j] = pcm[start+j];
-			out[j] = pcm[start+j];
+			buf[j] = pcm[start + j];
+			out[j] = pcm[start + j];
 		}
 
 		_fft(buf, out, config.size, 1);
@@ -46,14 +46,15 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
 	}
 
 	for (i = 0; i < config.bins; i++) {
-		bins[i].magnitude = bins[i].magnitude / (float) config.frames;
+		bins[i].magnitude = bins[i].magnitude / (float)config.frames;
 	}
 
 	return 0;
 }
 
 int
-build_fft_config(fft_config_t  *config, u_int size, u_int bins, u_int fs, u_int total_samples, float f_min)
+build_fft_config(fft_config_t *config, u_int size, u_int bins, u_int fs,
+    u_int total_samples, float f_min)
 {
 	config->size = size;
 	config->bins = bins;
@@ -73,9 +74,9 @@ reset_bins(bin_t *bins, fft_config_t config)
 
 	for (i = 0; i < config.bins; i++) {
 		bins[i].magnitude = 0.0f;
-		bins[i].frequency = (float)i * (float) config.fs / (float) config.size;
+		bins[i].frequency =
+		    (float)i * (float)config.fs / (float)config.size;
 	}
 
 	return 0;
 }
-
