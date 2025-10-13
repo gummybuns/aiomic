@@ -26,43 +26,43 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
 {
 	u_int i, j, start;
 	float real, imag;
-	cplx buf[config.size];
-	cplx out[config.size];
+	cplx buf[config.nsamples];
+	cplx out[config.nsamples];
 
-	for (i = 0; i < config.frames; i++) {
-		start = i * config.size;
-		for (j = 0; j < config.size; j++) {
+	for (i = 0; i < config.nframes; i++) {
+		start = i * config.nsamples;
+		for (j = 0; j < config.nsamples; j++) {
 			buf[j] = pcm[start + j];
 			out[j] = pcm[start + j];
 		}
 
-		_fft(buf, out, config.size, 1);
+		_fft(buf, out, config.nsamples, 1);
 
-		for (j = 0; j < config.bins; j++) {
+		for (j = 0; j < config.nbins; j++) {
 			real = (float)creal(buf[j]);
 			imag = (float)cimag(buf[j]);
 			bins[j].magnitude += sqrtf(real * real + imag * imag);
 		}
 	}
 
-	for (i = 0; i < config.bins; i++) {
-		bins[i].magnitude = bins[i].magnitude / (float)config.frames;
+	for (i = 0; i < config.nbins; i++) {
+		bins[i].magnitude = bins[i].magnitude / (float)config.nframes;
 	}
 
 	return 0;
 }
 
 int
-build_fft_config(fft_config_t *config, u_int size, u_int bins, u_int fs,
-    u_int total_samples, float f_min)
+build_fft_config(fft_config_t *config, u_int nsamples, u_int nbins, u_int fs,
+    u_int total_samples, float fmin)
 {
-	config->size = size;
-	config->bins = bins;
-	config->f_min = f_min;
+	config->nsamples = nsamples;
+	config->nbins = nbins;
+	config->fmin = fmin;
 	config->fs = fs;
-	config->f_max = (float)fs / 2.0f;
+	config->fmax = (float)fs / 2.0f;
 	config->total_samples = total_samples;
-	config->frames = total_samples / size;
+	config->nframes = total_samples / nsamples;
 
 	return 0;
 }
@@ -72,10 +72,10 @@ reset_bins(bin_t *bins, fft_config_t config)
 {
 	u_int i;
 
-	for (i = 0; i < config.bins; i++) {
+	for (i = 0; i < config.nbins; i++) {
 		bins[i].magnitude = 0.0f;
 		bins[i].frequency =
-		    (float)i * (float)config.fs / (float)config.size;
+		    (float)i * (float)config.fs / (float)config.nsamples;
 	}
 
 	return 0;

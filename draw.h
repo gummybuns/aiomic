@@ -10,26 +10,27 @@
 #define DRAW_INFO 2
 #define DRAW_FREQ 3
 
+#define FREQ_SCALE_FACTOR 1.2f
 #define DEFAULT_BAR_COUNT 50
 
 #define PADDING_PCT 0.1f
 
 typedef struct bar_t {
-	float f_min;   /* minimum frequency of the bar */
-	float f_max;   /* maximum frequency of the bar */
-	int bin_count; /* number of bins represented in the bar */
+	float fmin;  /* minimum frequency of the bar */
+	float fmax;  /* maximum frequency of the bar */
+	u_int nbins; /* number of bins represented in the bar */
 	float
 	    magnitude; /* sum of all amplitudes of all bins within frequency */
 } bar_t;
 
 typedef struct draw_config_t {
-	u_int rows;      /* number of rows on screen */
-	u_int cols;      /* number of cols on screen */
-	u_int max_h;     /* max height (including padding) */
-	u_int max_w;     /* max width (including padding) */
-	u_int y_padding; /* padding top/bottom */
-	u_int x_padding; /* padding left/right */
-	u_int bars;      /* number of bars to draw in frequency screen */
+	int rows;      /* number of rows on screen */
+	int cols;      /* number of cols on screen */
+	int max_h;     /* max height (including padding) */
+	int max_w;     /* max width (including padding) */
+	int y_padding; /* padding top/bottom */
+	int x_padding; /* padding left/right */
+	u_int nbars;   /* number of bars to draw in frequency screen */
 } draw_config_t;
 
 int build_draw_config(draw_config_t *config);

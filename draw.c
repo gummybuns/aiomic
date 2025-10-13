@@ -58,20 +58,19 @@ check_options(int keypress)
 int
 build_draw_config(draw_config_t *config)
 {
-	int rows, cols;
-	u_int x_padding, y_padding;
+	int rows, cols, x_padding, y_padding;
 
 	getmaxyx(stdscr, rows, cols);
-	x_padding = (u_int)((float)cols * PADDING_PCT);
-	y_padding = (u_int)((float)rows * PADDING_PCT);
+	x_padding = (int)((float)cols * PADDING_PCT);
+	y_padding = (int)((float)rows * PADDING_PCT);
 
-	config->rows = (u_int)rows;
-	config->cols = (u_int)cols;
+	config->rows = rows;
+	config->cols = cols;
 	config->x_padding = x_padding;
 	config->y_padding = y_padding;
-	config->max_h = (u_int)rows - y_padding * 2;
-	config->max_w = (u_int)cols - x_padding * 2;
-	config->bars = config->max_w;
+	config->max_h = rows - y_padding * 2;
+	config->max_w = cols - x_padding * 2;
+	config->nbars = (u_int)config->max_w;
 
 	return 0;
 }
@@ -104,17 +103,17 @@ inline int
 reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
 {
 	u_int i;
-	for (i = 0; i < draw_config.bars; i++) {
-		float frac_start = (float)i / (float)draw_config.bars;
-		float frac_end = (float)(i + 1) / (float)draw_config.bars;
-		bars[i].f_min =
-		    fft_config.f_min *
-		    powf(fft_config.f_max / fft_config.f_min, frac_start);
-		bars[i].f_max =
-		    fft_config.f_min *
-		    powf(fft_config.f_max / fft_config.f_min, frac_end);
+	for (i = 0; i < draw_config.nbars; i++) {
+		float frac_start = (float)i / (float)draw_config.nbars;
+		float frac_end = (float)(i + 1) / (float)draw_config.nbars;
+		bars[i].fmin =
+		    fft_config.fmin *
+		    powf(fft_config.fmax / fft_config.fmin, frac_start);
+		bars[i].fmax =
+		    fft_config.fmin *
+		    powf(fft_config.fmax / fft_config.fmin, frac_end);
 		bars[i].magnitude = 0.0f;
-		bars[i].bin_count = 0;
+		bars[i].nbins = 0;
 	}
 
 	return 0;
@@ -132,15 +131,16 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
-	int draw_start, option, res;
-	u_int active_bars, i, j, title_center;
+	int active_bars, draw_start, option, res, title_center;
+	u_int i, j;
+	float avg, freq, scaled_magnitude;
 	float pcm[audio_stream->total_samples];
-	bar_t bars[draw_config.bars];
-	bin_t bins[fft_config.bins];
+	bar_t bars[draw_config.nbars];
+	bin_t bins[fft_config.nbins];
 
 	title_center = draw_config.cols / 2 - 10;
 
-	mvprintw(0, (int)title_center, "Measure Mic Frequency\n");
+	mvprintw(0, title_center, "Measure Mic Frequency\n");
 	refresh();
 
 	nodelay(stdscr, TRUE);
@@ -159,27 +159,27 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 		fft(fft_config, bins, pcm);
 
 		/* Attribute a bin to the corresponding bar */
-		for (i = 0; i < fft_config.bins; i++) {
-			float freq = bins[i].frequency;
-			for (j = 0; j < draw_config.bars; j++) {
-				if (freq >= bars[j].f_min &&
-				    freq < bars[j].f_max) {
+		for (i = 0; i < fft_config.nbins; i++) {
+			freq = bins[i].frequency;
+			for (j = 0; j < draw_config.nbars; j++) {
+				if (freq >= bars[j].fmin &&
+				    freq < bars[j].fmax) {
 					bars[j].magnitude += bins[i].magnitude;
-					bars[j].bin_count += 1;
+					bars[j].nbins += 1;
 					break;
 				}
 			}
 		}
 
 		active_bars = 0;
-		for (i = 0; i < draw_config.bars; i++) {
+		for (i = 0; i < draw_config.nbars; i++) {
 			/*
 			 * Based on the number of bins / number of bars it is
 			 * possible that some bars just have no data. We are
 			 * going to skip drawing these so there are no gaps
 			 * in the bar graph
 			 */
-			if (bars[i].bin_count <= 0)
+			if (bars[i].nbins <= 0)
 				continue;
 			active_bars++;
 		}
@@ -187,22 +187,22 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 		draw_start = (int)draw_config.x_padding +
 			     (int)(draw_config.max_w - active_bars) / 2;
 		j = 0;
-		for (i = 0; i < draw_config.bars; i++) {
+		for (i = 0; i < draw_config.nbars; i++) {
 			// TODO it would be great to move this to a separate
 			// pane
 			// mvprintw((int)i, 0, "%f - %f: %f / %d",
 			// bars[i].f_min, bars[i].f_max, bars[i].magnitude,
 			// bars[i].bin_count);
-			if (bars[i].bin_count <= 0)
+			if (bars[i].nbins <= 0)
 				continue;
 
-			float a = bars[i].magnitude / (float)bars[i].bin_count;
-			float scaled_magnitude = fminf(ceilf(a * 1.2f),
-			    (float)draw_config.max_h -
-				(float)draw_config.y_padding);
-			mvvline((int)draw_config.y_padding, (int)j + draw_start,
-			    ' ', (int)draw_config.max_h);
-			mvvline((int)draw_config.max_h - (int)scaled_magnitude,
+			avg = bars[i].magnitude / (float)bars[i].nbins;
+			avg = ceilf(avg * FREQ_SCALE_FACTOR);
+			scaled_magnitude = fminf(avg,
+			    (float)(draw_config.max_h - draw_config.y_padding));
+			mvvline(draw_config.y_padding, (int)j + draw_start, ' ',
+			    draw_config.max_h);
+			mvvline(draw_config.max_h - (int)scaled_magnitude,
 			    (int)j + draw_start, '|', (int)scaled_magnitude);
 			j++;
 		}

@@ -53,8 +53,8 @@ main(int argc, char *argv[])
 
 	option = DRAW_RECORD;
 
-	build_fft_config(&fft_config, DEFAULT_FFT_SIZE, DEFAULT_BIN_SIZE,
-	    rctrl.config.sample_rate, rstream.total_samples, DEFAULT_F_MIN);
+	build_fft_config(&fft_config, DEFAULT_NSAMPLES, DEFAULT_NBINS,
+	    rctrl.config.sample_rate, rstream.total_samples, DEFAULT_FMIN);
 	build_draw_config(&draw_config);
 
 	for (;;) {
