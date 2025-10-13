@@ -92,7 +92,7 @@ stream(audio_ctrl_t ctrl, audio_stream_t *stream)
 		/* the size of the buffer or whats left */
 		ns = (u_int)fminf((float)ctrl.config.buffer_size,
 		    (float)(stream->total_size - i));
-		if (ctrl.mode == CTRL_RECORD) {
+		if (ctrl.mode == AUMODE_RECORD) {
 			io_count = read(ctrl.fd, data, ns);
 		} else {
 			io_count = write(ctrl.fd, data, ns);

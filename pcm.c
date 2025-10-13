@@ -9,11 +9,11 @@ set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 	converter->swap_func = NULL;
 
 	switch (encoding) {
-	case CTRL_ULINEAR:
-	case CTRL_SLINEAR:
+	case AUDIO_ENCODING_ULINEAR:
+	case AUDIO_ENCODING_SLINEAR:
 		break;
-	case CTRL_SLINEAR_LE:
-	case CTRL_ULINEAR_LE:
+	case AUDIO_ENCODING_SLINEAR_LE:
+	case AUDIO_ENCODING_ULINEAR_LE:
 		if (BYTE_ORDER == BIG_ENDIAN) {
 			if (precision == 8) {
 				converter->swap_func = NULL;
@@ -26,8 +26,8 @@ set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 			}
 		}
 		break;
-	case CTRL_SLINEAR_BE:
-	case CTRL_ULINEAR_BE:
+	case AUDIO_ENCODING_SLINEAR_BE:
+	case AUDIO_ENCODING_ULINEAR_BE:
 		if (BYTE_ORDER == LITTLE_ENDIAN) {
 			if (precision == 8) {
 				converter->swap_func = NULL;
@@ -53,13 +53,13 @@ set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 	converter->sign_func = NULL;
 
 	switch (encoding) {
-	case CTRL_SLINEAR_LE:
-	case CTRL_ULINEAR_LE:
-	case CTRL_SLINEAR_BE:
-	case CTRL_ULINEAR_BE:
+	case AUDIO_ENCODING_SLINEAR_LE:
+	case AUDIO_ENCODING_ULINEAR_LE:
+	case AUDIO_ENCODING_SLINEAR_BE:
+	case AUDIO_ENCODING_ULINEAR_BE:
 		break;
-	case CTRL_ULINEAR:
-	case CTRL_SLINEAR:
+	case AUDIO_ENCODING_ULINEAR:
+	case AUDIO_ENCODING_SLINEAR:
 		if (precision == 8) {
 			converter->sign_func = change_sign8;
 		} else if (precision == 16 && BYTE_ORDER == LITTLE_ENDIAN) {

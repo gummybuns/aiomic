@@ -11,44 +11,44 @@
  * Translate standard encoding definitions
  */
 const char *
-get_encoding_name(ctrlencoding encoding)
+get_encoding_name(u_int encoding)
 {
 	switch (encoding) {
-	case CTRL_NONE:
+	case AUDIO_ENCODING_NONE:
 		return "NONE";
-	case CTRL_MULAW:
+	case AUDIO_ENCODING_ULAW:
 		return "MULAW";
-	case CTRL_ALAW:
+	case AUDIO_ENCODING_ALAW:
 		return "ALAW";
-	case CTRL_LINEAR:
+	case AUDIO_ENCODING_LINEAR:
 		return "LINEAR";
-	case CTRL_LINEAR8:
+	case AUDIO_ENCODING_LINEAR8:
 		return "LINEAR8";
-	case CTRL_SLINEAR:
+	case AUDIO_ENCODING_SLINEAR:
 		return "SLINEAR";
-	case CTRL_SLINEAR_LE:
+	case AUDIO_ENCODING_SLINEAR_LE:
 		return "SLINEAR_LE";
-	case CTRL_SLINEAR_BE:
+	case AUDIO_ENCODING_SLINEAR_BE:
 		return "SLINEAR_BE";
-	case CTRL_ULINEAR:
+	case AUDIO_ENCODING_ULINEAR:
 		return "ULINEAR";
-	case CTRL_ULINEAR_LE:
+	case AUDIO_ENCODING_ULINEAR_LE:
 		return "ULINEAR_LE";
-	case CTRL_ULINEAR_BE:
+	case AUDIO_ENCODING_ULINEAR_BE:
 		return "ULINEAR_BE";
-	case CTRL_MPEG_L1_STREAM:
+	case AUDIO_ENCODING_MPEG_L1_STREAM:
 		return "MPEG_L1_STREAM";
-	case CTRL_MPEG_L1_PACKETS:
+	case AUDIO_ENCODING_MPEG_L1_PACKETS:
 		return "MPEG_L1_PACKETS";
-	case CTRL_MPEG_L1_SYSTEM:
+	case AUDIO_ENCODING_MPEG_L1_SYSTEM:
 		return "MPEG_L1_SYSTEM";
-	case CTRL_MPEG_L2_STREAM:
+	case AUDIO_ENCODING_MPEG_L2_STREAM:
 		return "MPEG_L2_STREAM";
-	case CTRL_MPEG_L2_PACKETS:
+	case AUDIO_ENCODING_MPEG_L2_PACKETS:
 		return "MPEG_L2_PACKETS";
-	case CTRL_MPEG_L2_SYSTEM:
+	case AUDIO_ENCODING_MPEG_L2_SYSTEM:
 		return "MPEG_L2_SYSTEM";
-	case CTRL_AC3:
+	case AUDIO_ENCODING_AC3:
 		return "DOLBY_DIGITAL_AC3";
 	default:
 		return NULL;
@@ -62,9 +62,9 @@ const char *
 get_mode(audio_ctrl_t ctrl)
 {
 	switch (ctrl.mode) {
-	case CTRL_PLAY:
+	case AUMODE_PLAY:
 		return "PLAY";
-	case CTRL_RECORD:
+	case AUMODE_RECORD:
 		return "RECORD";
 	default:
 		return NULL;
@@ -75,7 +75,7 @@ get_mode(audio_ctrl_t ctrl)
  * Initializes an audio controller based on the file path to the audio device
  */
 int
-build_audio_ctrl(audio_ctrl_t *ctrl, char *path, int mode)
+build_audio_ctrl(audio_ctrl_t *ctrl, char *path, u_int mode)
 {
 	int fd;
 	audio_info_t info, format;
