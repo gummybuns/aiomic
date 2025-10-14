@@ -3,7 +3,6 @@
 #include <stdlib.h>
 
 #include "audio_ctrl.h"
-#include "audio_rms.h"
 #include "audio_stream.h"
 #include "draw.h"
 #include "error_codes.h"
@@ -225,30 +224,27 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
  * navigation option so the main routine can render the next screen
  */
 int
-draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
+draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream, draw_config_t draw_config)
 {
 	char keypress;
 	int title_center;
-	int row, col;
-	int x_padding, y_padding;
 	int bar_start, bar_end, bar_distance;
 	int draw_length;
 	int option;
 	int res;
+	u_int i;
 	float rms, percent;
+	float pcm[audio_stream->total_samples];
 
-	getmaxyx(stdscr, row, col);
-	y_padding = col / 10;
-	x_padding = row / 10;
-	bar_start = y_padding;
-	bar_end = col - y_padding;
+	bar_start = draw_config.y_padding;
+	bar_end = draw_config.cols - draw_config.y_padding;
 	bar_distance = bar_end - bar_start;
-	title_center = col / 2 - 10;
+	title_center = draw_config.cols / 2 - 10;
 
 	mvprintw(0, title_center, "Measure Mic Intensity\n");
-	mvprintw(3 + x_padding, bar_start, "0%%");
-	mvprintw(3 + x_padding, bar_start + bar_distance / 2 - 2, "50%%");
-	mvprintw(3 + x_padding, bar_start + bar_distance - 3, "100%%");
+	mvprintw(3 + draw_config.x_padding, bar_start, "0%%");
+	mvprintw(3 + draw_config.x_padding, bar_start + bar_distance / 2 - 2, "50%%");
+	mvprintw(3 + draw_config.x_padding, bar_start + bar_distance - 3, "100%%");
 	refresh();
 
 	nodelay(stdscr, TRUE);
@@ -261,21 +257,27 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream)
 		}
 
 		/* calculate rms */
-		rms = calc_rms(audio_stream->data, audio_stream->precision,
-		    audio_stream->total_samples);
-		percent = calc_rms_percent(rms, audio_stream->precision);
-
-		if (percent < 0) {
-			return E_RMS_UNKNOWN_PRECISION;
+		if ((res = to_normalized_pcm(audio_stream, pcm)) > 0) {
+			return res;
 		}
+
+		rms = 0;
+		for (i = 0; i < audio_stream->total_samples; i++) {
+			rms += pcm[i] * pcm[i];
+		}
+		rms = sqrtf(rms / (float)audio_stream->total_samples);
+		//TODO it should really be *100 but 1000 makes it "look nicer"
+		// if i keep the 1000 i need to ensure it never goes over 100%
+		// prolly make the scale a draw_config option
+		percent = rms * 1000;
 
 		/* draw */
 		draw_length =
 		    (int)((float)bar_distance * (percent / (float)100.0));
-		mvhline(2, 0, ' ', col);
-		mvprintw(2, title_center + 2, "RMS:\t%d", (int)rms);
-		mvhline(2 + x_padding, bar_start, ' ', bar_distance);
-		mvhline(2 + x_padding, bar_start, '=', draw_length);
+		mvhline(2, 0, ' ', draw_config.cols);
+		mvprintw(2, title_center + 2, "RMS:\t%f", rms);
+		mvhline(2 + draw_config.x_padding, bar_start, ' ', bar_distance);
+		mvhline(2 + draw_config.x_padding, bar_start, '=', draw_length);
 		move(1, 0);
 		refresh();
 

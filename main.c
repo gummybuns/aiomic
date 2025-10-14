@@ -47,9 +47,12 @@ main(int argc, char *argv[])
 		err(1, "Failed to build audio stream: %d", res);
 	}
 
-	initscr();
-	raw();
+	if (initscr() == NULL) {
+		err(1, "can't initialize curses");
+	}
+	cbreak();
 	noecho();
+	curs_set(0);
 
 	option = DRAW_RECORD;
 
@@ -65,7 +68,7 @@ main(int argc, char *argv[])
 		}
 
 		if (option == DRAW_RECORD) {
-			option = draw_intensity(rctrl, &rstream);
+			option = draw_intensity(rctrl, &rstream, draw_config);
 		} else if (option == DRAW_INFO) {
 			option = draw_info(rctrl, rstream);
 		} else if (option == DRAW_FREQ) {

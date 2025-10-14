@@ -35,7 +35,7 @@ typedef struct draw_config_t {
 
 int build_draw_config(draw_config_t *config);
 int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream);
-int draw_intensity(audio_ctrl_t rctrl, audio_stream_t *audio_stream);
+int draw_intensity(audio_ctrl_t rctrl, audio_stream_t *audio_stream, draw_config_t draw_config);
 int draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
     fft_config_t fft_config, draw_config_t draw_config);
 void draw_options(void);
