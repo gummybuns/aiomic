@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+
 #include "audio_ctrl.h"
 #include "audio_stream.h"
 #include "draw.h"
@@ -226,28 +227,20 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 int
 draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream, draw_config_t draw_config)
 {
-	char keypress;
-	int title_center;
 	int bar_start, bar_end, bar_distance;
 	int draw_length;
-	int option;
 	int res;
 	u_int i;
 	float rms, percent;
 	float pcm[audio_stream->total_samples];
 
+	draw_config.y_padding = 0;
+	draw_config.x_padding = 10;
+	draw_config.rows = 1;
+	draw_config.cols = 60;
 	bar_start = draw_config.y_padding;
 	bar_end = draw_config.cols - draw_config.y_padding;
 	bar_distance = bar_end - bar_start;
-	title_center = draw_config.cols / 2 - 10;
-
-	mvprintw(0, title_center, "Measure Mic Intensity\n");
-	mvprintw(3 + draw_config.x_padding, bar_start, "0%%");
-	mvprintw(3 + draw_config.x_padding, bar_start + bar_distance / 2 - 2, "50%%");
-	mvprintw(3 + draw_config.x_padding, bar_start + bar_distance - 3, "100%%");
-	refresh();
-
-	nodelay(stdscr, TRUE);
 
 	for (;;) {
 		/* record the audio to the stream */
@@ -274,19 +267,13 @@ draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream, draw_config_t dr
 		/* draw */
 		draw_length =
 		    (int)((float)bar_distance * (percent / (float)100.0));
-		mvhline(2, 0, ' ', draw_config.cols);
-		mvprintw(2, title_center + 2, "RMS:\t%f", rms);
-		mvhline(2 + draw_config.x_padding, bar_start, ' ', bar_distance);
-		mvhline(2 + draw_config.x_padding, bar_start, '=', draw_length);
-		move(1, 0);
-		refresh();
-
-		/* listen for input */
-		keypress = (char)getch();
-		option = check_options(keypress);
-		if (option != 0 && option != DRAW_RECORD) {
-			return option;
+		printf("\33[2K\r ");
+		//printf("%d", draw_length);
+		for (i = 0; i < (u_int)draw_length; i++) {
+			printf("=");
 		}
+		//printf("\n");
+		fflush(stdout);
 	}
 }
 

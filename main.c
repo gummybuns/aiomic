@@ -47,27 +47,31 @@ main(int argc, char *argv[])
 		err(1, "Failed to build audio stream: %d", res);
 	}
 
+	/*
 	if (initscr() == NULL) {
 		err(1, "can't initialize curses");
 	}
 	cbreak();
 	noecho();
 	curs_set(0);
+	*/
 
 	option = DRAW_RECORD;
 
 	build_fft_config(&fft_config, DEFAULT_NSAMPLES, DEFAULT_NBINS,
 	    rctrl.config.sample_rate, rstream.total_samples, DEFAULT_FMIN);
-	build_draw_config(&draw_config);
+	//build_draw_config(&draw_config);
 
+	printf("BEFORE FOR LOOP\n\n");
 	for (;;) {
-		draw_options();
+		//draw_options();
 
 		if (option >= E_UNHANDLED) {
 			err(1, "Unhandled Error: %d", option);
 		}
 
 		if (option == DRAW_RECORD) {
+			printf("ENTERING draw_intensity\n\n");
 			option = draw_intensity(rctrl, &rstream, draw_config);
 		} else if (option == DRAW_INFO) {
 			option = draw_info(rctrl, rstream);
