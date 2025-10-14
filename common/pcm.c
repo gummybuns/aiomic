@@ -53,12 +53,12 @@ set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 
 	switch (encoding) {
 	case AUDIO_ENCODING_SLINEAR_LE:
-	case AUDIO_ENCODING_ULINEAR_LE:
 	case AUDIO_ENCODING_SLINEAR_BE:
-	case AUDIO_ENCODING_ULINEAR_BE:
+	case AUDIO_ENCODING_SLINEAR:
 		break;
 	case AUDIO_ENCODING_ULINEAR:
-	case AUDIO_ENCODING_SLINEAR:
+	case AUDIO_ENCODING_ULINEAR_LE:
+	case AUDIO_ENCODING_ULINEAR_BE:
 		if (precision == 8) {
 			converter->sign_func = change_sign8;
 		} else if (precision == 16 && BYTE_ORDER == LITTLE_ENDIAN) {

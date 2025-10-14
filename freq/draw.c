@@ -128,7 +128,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 			return res;
 		}
 
-		if ((res = to_normalized_pcm(audio_stream, pcm)) > 0) {
+		if ((res = to_normalized_pcm(audio_stream, pcm)) != 0) {
 			return res;
 		}
 
@@ -164,11 +164,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 			     (int)(draw_config.max_w - active_bars) / 2;
 		j = 0;
 		for (i = 0; i < draw_config.nbars; i++) {
-			// TODO it would be great to move this to a separate
-			// pane
-			// mvprintw((int)i, 0, "%f - %f: %f / %d",
-			// bars[i].f_min, bars[i].f_max, bars[i].magnitude,
-			// bars[i].bin_count);
 			if (bars[i].nbins <= 0)
 				continue;
 
