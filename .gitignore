@@ -31,5 +31,8 @@ bin/*
 *.html1
 audiodisp
 aiomic
+aiofreq
+mictest
+
 
 TODO

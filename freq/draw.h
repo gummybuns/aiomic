@@ -3,6 +3,7 @@
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
+#include "draw_config.h"
 #include "fft.h"
 
 #define DRAW_EXIT -1
@@ -23,19 +24,7 @@ typedef struct bar_t {
 	    magnitude; /* sum of all amplitudes of all bins within frequency */
 } bar_t;
 
-typedef struct draw_config_t {
-	int rows;      /* number of rows on screen */
-	int cols;      /* number of cols on screen */
-	int max_h;     /* max height (including padding) */
-	int max_w;     /* max width (including padding) */
-	int y_padding; /* padding top/bottom */
-	int x_padding; /* padding left/right */
-	u_int nbars;   /* number of bars to draw in frequency screen */
-} draw_config_t;
-
-int build_draw_config(draw_config_t *config);
 int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream);
-int draw_intensity(audio_ctrl_t rctrl, audio_stream_t *audio_stream, draw_config_t draw_config);
 int draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
     fft_config_t fft_config, draw_config_t draw_config);
 void draw_options(void);

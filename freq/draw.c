@@ -2,10 +2,10 @@
 #include <math.h>
 #include <stdlib.h>
 
-
 #include "audio_ctrl.h"
 #include "audio_stream.h"
 #include "draw.h"
+#include "draw_config.h"
 #include "error_codes.h"
 #include "fft.h"
 #include "pcm.h"
@@ -29,11 +29,9 @@ print_ctrl(audio_ctrl_t ctrl)
 	       "\t\tsample_rate:\t\t%d\n"
 	       "\t\tprecision:\t\t%d\n"
 	       "\t\tchannels:\t\t%d\n"
-	       "\t\tencoding:\t\t%s\n"
-	       "\t\tpause:\t\t\t%d\n",
+	       "\t\tencoding:\t\t%s\n",
 	    ctrl.path, mode, ctrl.config.buffer_size, ctrl.config.sample_rate,
-	    ctrl.config.precision, ctrl.config.channels, config_encoding,
-	    ctrl.config.pause);
+	    ctrl.config.precision, ctrl.config.channels, config_encoding);
 }
 
 /*
@@ -44,8 +42,6 @@ check_options(int keypress)
 {
 	if (keypress == 'I') {
 		return DRAW_INFO;
-	} else if (keypress == 'R') {
-		return DRAW_RECORD;
 	} else if (keypress == 'Q') {
 		return DRAW_EXIT;
 	} else if (keypress == 'F') {
@@ -53,26 +49,6 @@ check_options(int keypress)
 	} else {
 		return 0;
 	}
-}
-
-int
-build_draw_config(draw_config_t *config)
-{
-	int rows, cols, x_padding, y_padding;
-
-	getmaxyx(stdscr, rows, cols);
-	x_padding = (int)((float)cols * PADDING_PCT);
-	y_padding = (int)((float)rows * PADDING_PCT);
-
-	config->rows = rows;
-	config->cols = cols;
-	config->x_padding = x_padding;
-	config->y_padding = y_padding;
-	config->max_h = rows - y_padding * 2;
-	config->max_w = cols - x_padding * 2;
-	config->nbars = (u_int)config->max_w;
-
-	return 0;
 }
 
 /*
@@ -218,66 +194,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 }
 
 /*
- * Displays a screen to record audio and show the intensity based on the
- * Root Mean Square
- *
- * Wait for a user to press one of navigation options. Returns the pressed
- * navigation option so the main routine can render the next screen
- */
-int
-draw_intensity(audio_ctrl_t ctrl, audio_stream_t *audio_stream, draw_config_t draw_config)
-{
-	int bar_start, bar_end, bar_distance;
-	int draw_length;
-	int res;
-	u_int i;
-	float rms, percent;
-	float pcm[audio_stream->total_samples];
-
-	draw_config.y_padding = 0;
-	draw_config.x_padding = 10;
-	draw_config.rows = 1;
-	draw_config.cols = 60;
-	bar_start = draw_config.y_padding;
-	bar_end = draw_config.cols - draw_config.y_padding;
-	bar_distance = bar_end - bar_start;
-
-	for (;;) {
-		/* record the audio to the stream */
-		res = stream(ctrl, audio_stream);
-		if (res != 0) {
-			return res;
-		}
-
-		/* calculate rms */
-		if ((res = to_normalized_pcm(audio_stream, pcm)) > 0) {
-			return res;
-		}
-
-		rms = 0;
-		for (i = 0; i < audio_stream->total_samples; i++) {
-			rms += pcm[i] * pcm[i];
-		}
-		rms = sqrtf(rms / (float)audio_stream->total_samples);
-		//TODO it should really be *100 but 1000 makes it "look nicer"
-		// if i keep the 1000 i need to ensure it never goes over 100%
-		// prolly make the scale a draw_config option
-		percent = rms * 1000;
-
-		/* draw */
-		draw_length =
-		    (int)((float)bar_distance * (percent / (float)100.0));
-		printf("\33[2K\r ");
-		//printf("%d", draw_length);
-		for (i = 0; i < (u_int)draw_length; i++) {
-			printf("=");
-		}
-		//printf("\n");
-		fflush(stdout);
-	}
-}
-
-/*
  * Renders the nav options at the bottom of the screen for the user to see
  */
 void
@@ -286,6 +202,6 @@ draw_options(void)
 	int row;
 	row = getmaxy(stdscr);
 	mvprintw(row - 1, 0, "OPTIONS: ");
-	printw("R: RECORD / F: FREQ / I: INFO / Q: QUIT");
+	printw("F: FREQ / I: INFO / Q: QUIT");
 	refresh();
 }

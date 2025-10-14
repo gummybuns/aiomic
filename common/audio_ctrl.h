@@ -12,7 +12,6 @@ typedef struct audio_config_t {
 	u_int encoding;    /* the encoding of the audio device */
 	u_int precision;   /* the number of bits per sample */
 	u_int sample_rate; /* number of samples per second */
-	u_int pause;       /* is the device actively recording */
 } audio_config_t;
 
 typedef struct audio_ctrl_t {

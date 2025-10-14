@@ -98,7 +98,6 @@ build_audio_ctrl(audio_ctrl_t *ctrl, char *path, u_int mode)
 	}
 
 	/* set device to use hardware's current settings */
-	info.record.pause = format.record.pause;
 	info.record.buffer_size = format.record.buffer_size;
 	info.record.sample_rate = format.record.sample_rate;
 	info.record.precision = format.record.precision;
