@@ -1,7 +1,6 @@
 #include "pcm.h"
 #include "auconv.h"
 #include "error_codes.h"
-#include <curses.h>
 
 static inline int
 set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
@@ -148,7 +147,6 @@ to_normalized_pcm(audio_stream_t *audio_stream, float *pcm)
 			converter.sign_func(c);
 		}
 		pcm[j] = converter.normalize_func(c);
-		refresh();
 
 		j++;
 		c += inc;
