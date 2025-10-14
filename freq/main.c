@@ -18,7 +18,8 @@
 
 #define STREAM_DURATION 250
 
-static inline int build_draw_config(draw_config_t *config)
+static inline int
+build_draw_config(draw_config_t *config)
 {
 	int rows, cols, x_padding, y_padding;
 

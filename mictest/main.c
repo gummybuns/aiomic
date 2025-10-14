@@ -18,7 +18,8 @@
 #define STREAM_DURATION 250
 
 static inline int
-draw_rms(audio_ctrl_t ctrl, audio_stream_t *audio_stream, draw_config_t draw_config)
+draw_rms(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
+    draw_config_t draw_config)
 {
 	int draw_length;
 	int res;
@@ -52,7 +53,9 @@ draw_rms(audio_ctrl_t ctrl, audio_stream_t *audio_stream, draw_config_t draw_con
 		/* draw */
 		draw_length =
 		    (int)((float)draw_config.nbars * (percent / (float)100.0));
-		draw_length = draw_length > (int)draw_config.nbars ? (int)draw_config.nbars : draw_length;
+		draw_length = draw_length > (int)draw_config.nbars
+				  ? (int)draw_config.nbars
+				  : draw_length;
 		printf("\33[A");
 		printf("\33[2K\r %*s", draw_config.x_padding, "");
 		// printf("%d", draw_length);
@@ -121,7 +124,7 @@ main(int argc, char *argv[])
 	}
 
 	if ((res = draw_rms(ctrl, &str, draw_config)) != 0) {
-		err(1, "Failed to meausre mic: %d", res);	
+		err(1, "Failed to meausre mic: %d", res);
 	}
 	return 0;
 }
