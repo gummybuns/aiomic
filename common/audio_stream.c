@@ -74,9 +74,6 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
 
 /*
  * Record or Play the audio stream based on the audio controller mode
- *
- * TODO: consider validations to ensure the stream + ctrl have the same
- * endoding
  */
 int
 stream(audio_ctrl_t ctrl, audio_stream_t stream, u_char *data)

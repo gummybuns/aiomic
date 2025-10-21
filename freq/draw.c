@@ -75,6 +75,13 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream)
 	}
 }
 
+/*
+ * Reset the bars back to their initial states
+ *
+ * Each bar is logarithmically spaced apart, meaning the frequency range of the
+ * bar increases with each one. This should provide more granular detail for
+ * the human audio spectrum.
+ */
 inline int
 reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
 {

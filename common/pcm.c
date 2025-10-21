@@ -2,6 +2,12 @@
 #include "auconv.h"
 #include "error_codes.h"
 
+/*
+ * Set the swap function of a converter
+ *
+ * Swapping is meant to be done when an audio encoding is used that differs from
+ * the machine's endian-ness.
+ */
 static inline int
 set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 {
@@ -46,6 +52,9 @@ set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 	return 0;
 }
 
+/*
+ * Set the sign function of a converter for an unsigned audio encoding
+ */
 static inline int
 set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 {
@@ -80,6 +89,9 @@ set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
 	return 0;
 }
 
+/*
+ * Set the normalization function for a converter based on the precision
+ */
 static inline int
 set_normalize_func(pcm_converter_t *converter, u_int precision)
 {
@@ -100,6 +112,9 @@ set_normalize_func(pcm_converter_t *converter, u_int precision)
 	return 0;
 }
 
+/*
+ * Build an pcm_converter
+ */
 int
 build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
 {
@@ -120,6 +135,9 @@ build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
 	return 0;
 }
 
+/*
+ * Convert the raw audio data into normalized pcm data
+ */
 int
 to_normalized_pcm(audio_stream_t audio_stream, u_char *data, float *pcm)
 {

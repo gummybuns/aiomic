@@ -1,6 +1,9 @@
 #include "fft.h"
 #include <math.h>
 
+/*
+ * Helper function to do the fft math
+ */
 inline void
 _fft(cplx *buf, cplx *out, u_int n, u_int step)
 {
@@ -21,6 +24,16 @@ _fft(cplx *buf, cplx *out, u_int n, u_int step)
 	}
 }
 
+/*
+ * Perform the fft on the normalized pcm data
+ *
+ * Breaks the pcm data into subsets (frames) based on the fft_config, each frame
+ * frame being a specific size (nsamples).
+ *
+ * The fft is then calculated on that
+ * specific frame, and the magnitude is each frequency bin is summed up and
+ * averaged over each frame.
+ */
 int
 fft(fft_config_t config, bin_t *bins, float *pcm)
 {
@@ -52,6 +65,9 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
 	return 0;
 }
 
+/*
+ * Initialize the fft_config
+ */
 int
 build_fft_config(fft_config_t *config, u_int nsamples, u_int nbins, u_int fs,
     u_int total_samples, float fmin)
@@ -67,6 +83,9 @@ build_fft_config(fft_config_t *config, u_int nsamples, u_int nbins, u_int fs,
 	return 0;
 }
 
+/*
+ * Reset the bins to their initial values
+ */
 int
 reset_bins(bin_t *bins, fft_config_t config)
 {

@@ -17,6 +17,9 @@
 
 #define STREAM_DURATION 250
 
+/*
+ * Draw the rms magnitude of the audio stream to the console
+ */
 static inline int
 draw_rms(audio_ctrl_t ctrl, audio_stream_t audio_stream,
     draw_config_t draw_config)
