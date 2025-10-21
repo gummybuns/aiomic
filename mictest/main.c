@@ -18,33 +18,34 @@
 #define STREAM_DURATION 250
 
 static inline int
-draw_rms(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
+draw_rms(audio_ctrl_t ctrl, audio_stream_t audio_stream,
     draw_config_t draw_config)
 {
 	int draw_length;
 	int res;
 	u_int i;
 	float rms, percent;
-	float pcm[audio_stream->total_samples];
+	u_char data[audio_stream.total_size];
+	float pcm[audio_stream.total_samples];
 
 	printf("\n\n");
 
 	for (;;) {
 		/* record the audio to the stream */
-		if ((res = stream(ctrl, audio_stream)) != 0) {
+		if ((res = stream(ctrl, audio_stream, data)) != 0) {
 			return res;
 		}
 
 		/* calculate rms */
-		if ((res = to_normalized_pcm(audio_stream, pcm)) > 0) {
+		if ((res = to_normalized_pcm(audio_stream, data, pcm)) > 0) {
 			return res;
 		}
 
 		rms = 0;
-		for (i = 0; i < audio_stream->total_samples; i++) {
+		for (i = 0; i < audio_stream.total_samples; i++) {
 			rms += pcm[i] * pcm[i];
 		}
-		rms = sqrtf(rms / (float)audio_stream->total_samples);
+		rms = sqrtf(rms / (float)audio_stream.total_samples);
 		// TODO it should really be *100 but 1000 makes it "look nicer"
 		//  if i keep the 1000 i need to ensure it never goes over 100%
 		//  prolly make the scale a draw_config option
@@ -123,7 +124,7 @@ main(int argc, char *argv[])
 		err(1, "Failed to build audio stream: %d", res);
 	}
 
-	if ((res = draw_rms(ctrl, &str, draw_config)) != 0) {
+	if ((res = draw_rms(ctrl, str, draw_config)) != 0) {
 		err(1, "Failed to meausre mic: %d", res);
 	}
 	return 0;

@@ -10,6 +10,6 @@ typedef struct pcm_converter_t {
 } pcm_converter_t;
 
 int build_converter(pcm_converter_t *converter, u_int prec, u_int enc);
-int to_normalized_pcm(audio_stream_t *a_stream, float *out);
+int to_normalized_pcm(audio_stream_t a_stream, u_char *data, float *out);
 
 #endif

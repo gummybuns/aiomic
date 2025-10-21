@@ -68,7 +68,6 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
 		stream->total_size += size;
 		i = i - nsamples;
 	}
-	stream->data = malloc(stream->total_size);
 
 	return 0;
 }
@@ -80,18 +79,16 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
  * endoding
  */
 int
-stream(audio_ctrl_t ctrl, audio_stream_t *stream)
+stream(audio_ctrl_t ctrl, audio_stream_t stream, u_char *data)
 {
 	u_int i, ns;
-	u_char *data;
 	ssize_t io_count;
 	io_count = 0;
 
-	data = stream->data;
-	for (i = 0; i < stream->total_size; i++) {
+	for (i = 0; i < stream.total_size; i++) {
 		/* the size of the buffer or whats left */
 		ns = (u_int)fminf((float)ctrl.config.buffer_size,
-		    (float)(stream->total_size - i));
+		    (float)(stream.total_size - i));
 		if (ctrl.mode == AUMODE_RECORD) {
 			io_count = read(ctrl.fd, data, ns);
 		} else {

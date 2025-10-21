@@ -103,14 +103,15 @@ reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
+draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
 	int active_bars, draw_start, option, res, title_center;
 	u_int i, j;
 	float avg, freq, scaled_magnitude;
-	float pcm[audio_stream->total_samples];
+	u_char data[audio_stream.total_size];
+	float pcm[audio_stream.total_samples];
 	bar_t bars[draw_config.nbars];
 	bin_t bins[fft_config.nbins];
 
@@ -124,11 +125,11 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t *audio_stream,
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
 
-		if ((res = stream(ctrl, audio_stream)) != 0) {
+		if ((res = stream(ctrl, audio_stream, data)) != 0) {
 			return res;
 		}
 
-		if ((res = to_normalized_pcm(audio_stream, pcm)) != 0) {
+		if ((res = to_normalized_pcm(audio_stream, data, pcm)) != 0) {
 			return res;
 		}
 

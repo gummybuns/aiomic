@@ -121,25 +121,25 @@ build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
 }
 
 int
-to_normalized_pcm(audio_stream_t *audio_stream, float *pcm)
+to_normalized_pcm(audio_stream_t audio_stream, u_char *data, float *pcm)
 {
-	u_int encoding, i, j, precision;
 	u_char *c;
+	u_int encoding, i, j, precision;
 	u_int inc;
 	int err;
 	pcm_converter_t converter;
 
-	precision = audio_stream->precision;
-	encoding = audio_stream->encoding;
+	precision = audio_stream.precision;
+	encoding = audio_stream.encoding;
 
 	if ((err = build_converter(&converter, precision, encoding)) > 0) {
 		return err;
 	}
 
 	inc = precision / STREAM_BYTE_SIZE;
-	c = (u_char *)audio_stream->data;
+	c = data;
 	j = 0;
-	for (i = 0; i < audio_stream->total_size; i += inc) {
+	for (i = 0; i < audio_stream.total_size; i += inc) {
 		if (converter.swap_func != NULL) {
 			converter.swap_func(c);
 		}
