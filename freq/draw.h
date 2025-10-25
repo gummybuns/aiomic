@@ -24,7 +24,7 @@ typedef struct bar_t {
 	    magnitude; /* sum of all amplitudes of all bins within frequency */
 } bar_t;
 
-int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream);
+int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config);
 int draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
     fft_config_t fft_config, draw_config_t draw_config);
 void draw_options(void);

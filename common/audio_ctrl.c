@@ -75,7 +75,7 @@ get_mode(audio_ctrl_t ctrl)
  * Initializes an audio controller based on the file path to the audio device
  */
 int
-build_audio_ctrl(audio_ctrl_t *ctrl, char *path, u_int mode)
+build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
 {
 	int fd;
 	audio_info_t info, format;
@@ -103,6 +103,38 @@ build_audio_ctrl(audio_ctrl_t *ctrl, char *path, u_int mode)
 	info.record.precision = format.record.precision;
 	info.record.channels = format.record.channels;
 	info.record.encoding = format.record.encoding;
+
+	if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
+		return E_CTRL_SETINFO;
+	}
+
+	/* update ctrl to reflect changes */
+	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+		return E_CTRL_GETINFO;
+	}
+	ctrl->config.precision = info.record.precision;
+	ctrl->config.encoding = info.record.encoding;
+	ctrl->config.buffer_size = info.record.buffer_size;
+	ctrl->config.sample_rate = info.record.sample_rate;
+	ctrl->config.channels = info.record.channels;
+
+	return 0;
+}
+
+int
+update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
+{
+	audio_info_t info;
+
+	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+		return E_CTRL_GETINFO;
+	}
+
+	if (cfg.buffer_size > 0) info.record.buffer_size = cfg.buffer_size;
+	if (cfg.channels > 0) info.record.channels = cfg.channels;
+	if (cfg.encoding > 0) info.record.encoding = cfg.encoding;
+	if (cfg.precision > 0) info.record.precision = cfg.precision;
+	if (cfg.sample_rate > 0) info.record.sample_rate = cfg.sample_rate;
 
 	if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
 		return E_CTRL_SETINFO;

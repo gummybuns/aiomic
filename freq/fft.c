@@ -69,11 +69,10 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
  * Initialize the fft_config
  */
 int
-build_fft_config(fft_config_t *config, u_int nsamples, u_int nbins, u_int fs,
-    u_int total_samples, float fmin)
+build_fft_config(fft_config_t *config, u_int nsamples, u_int fs, u_int total_samples, float fmin)
 {
 	config->nsamples = nsamples;
-	config->nbins = nbins;
+	config->nbins = nsamples / 2;
 	config->fmin = fmin;
 	config->fs = fs;
 	config->fmax = (float)fs / 2.0f;

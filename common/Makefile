@@ -3,7 +3,7 @@
 LIBISPRIVATE=	yes
 
 LIB=	audio
-SRCS+=	audio_ctrl.c audio_stream.c pcm.c
+SRCS+=	audio_ctrl.c audio_stream.c pcm.c decode.c
 
 .include <bsd.lib.mk>
 

@@ -18,10 +18,11 @@ typedef struct audio_ctrl_t {
 	int fd;                /* file descriptor to the audio device */
 	u_int mode;            /* record vs play */
 	audio_config_t config; /* the configuration of the audio device */
-	char *path;            /* the path to the audio device */
+	const char *path;            /* the path to the audio device */
 } audio_ctrl_t;
 
-int build_audio_ctrl(audio_ctrl_t *ctrl, char *path, u_int mode);
+int build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode);
+int update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t config);
 const char *get_encoding_name(u_int encoding);
 const char *get_mode(audio_ctrl_t ctrl);
 

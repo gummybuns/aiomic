@@ -3,6 +3,7 @@
 #include <curses.h>
 #include <err.h>
 #include <errno.h>
+#include <getopt.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,12 +12,14 @@
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
+#include "decode.h"
 #include "draw.h"
 #include "draw_config.h"
 #include "error_codes.h"
 #include "fft.h"
 
 #define STREAM_DURATION 250
+#define DEFAULT_PATH "/dev/sound"
 
 static inline int
 build_draw_config(draw_config_t *config)
@@ -38,29 +41,89 @@ build_draw_config(draw_config_t *config)
 	return 0;
 }
 
+static const char * shortopts = "b:c:d:e:f:n:p:s:";
+static struct option longopts[] = {
+	{ "buffer-size", 	required_argument,	NULL, 	'b' },
+	{ "channels", 		required_argument, 	NULL,	'c' },
+	{ "device", 		required_argument, 	NULL,	'd' },
+	{ "encoding",		required_argument,	NULL,	'e' },
+	{ "fft-samples",	required_argument,	NULL,	'f' },
+	{ "num-bars",		required_argument,	NULL,	'n' },
+	{ "fft-fmin",		required_argument,	NULL,	'm' },
+	{ "precision",		required_argument,	NULL,	'p' },
+	{ "sample-rate",	required_argument,	NULL,	's' },
+};
+
 int
 main(int argc, char *argv[])
 {
-	int option;
-	int res;
-	char *path;
+	int ch, option, res;
+	u_int nbars, fft_samples, fft_fmin;
+	const char *path;
 	audio_ctrl_t rctrl;
+	audio_config_t audio_config;
 	audio_stream_t rstream;
 	fft_config_t fft_config;
 	draw_config_t draw_config;
 
 	setprogname(argv[0]);
 
-	if (argc <= 1) {
-		errno = EINVAL;
-		err(1, "Specify an audio device");
-	}
+	path = DEFAULT_PATH;
 
-	path = argv[1];
+	audio_config.buffer_size = 0;
+	audio_config.channels = 0;
+	audio_config.encoding = 0;
+	audio_config.precision = 0;
+	audio_config.sample_rate = 0;
+	nbars = 0;
+	fft_samples = DEFAULT_NSAMPLES;
+	fft_fmin = DEFAULT_FMIN;
+
+	while ((ch = getopt_long(argc, argv,shortopts, longopts, NULL)) != -1) {
+		switch (ch) {
+		case 'b':
+			// TODO figure this out
+			audio_config.buffer_size = (u_int)strsuftoll("read buffer size", optarg, 1, UINT_MAX);
+			break;
+		case 'c':
+			decode_uint(optarg, &(audio_config.channels));
+			break;
+		case 'd':
+			path = optarg;
+			break;
+		case 'e':
+			// TODO figure out encoding strings next
+			break;
+		case 'f':
+			decode_uint(optarg, &(fft_samples));
+			break;
+		case 'm':
+			decode_uint(optarg, &(fft_fmin));
+			break;
+		case 'n':
+			decode_uint(optarg, &nbars);
+			break;
+		case 'p':
+			decode_uint(optarg, &(audio_config.precision));
+			break;
+		case 's':
+			decode_uint(optarg, &(audio_config.sample_rate));
+			break;
+		default:
+			// TODO - usage()
+			err(1, "%c is invalid argument", (char)ch);
+		}
+	}
 
 	res = build_audio_ctrl(&rctrl, path, AUMODE_RECORD);
 	if (res != 0) {
 		err(1, "Failed to build record audio controller: %d", res);
+
+	}
+
+	res = update_audio_ctrl(&rctrl, audio_config);
+	if (res != 0) {
+		err(1, "Failed to set audio controller: %d", res);
 	}
 
 	res = build_stream_from_ctrl(rctrl, STREAM_DURATION, &rstream);
@@ -75,11 +138,26 @@ main(int argc, char *argv[])
 	noecho();
 	curs_set(0);
 
-	option = DRAW_FREQ;
+	option = DRAW_INFO;
 
-	build_fft_config(&fft_config, DEFAULT_NSAMPLES, DEFAULT_NBINS,
-	    rctrl.config.sample_rate, rstream.total_samples, DEFAULT_FMIN);
+	// TODO - now that there is user input it is posible to get nans
+	// this happens when the fft_config.nsamples is less than the
+	// fft_config.total_samples (which is from the audio_stream)
+	// ./aiofreq -s 4092 shows this. we get 1023 total_samples but
+	// DEFAULT_NSAMPLES is 1024
+	// TOTAL_SAMPLES MUST BE BIGGER THAN NSAMPLES
+	// NSAMPLES MUST BE A POWER OF 2
+	// ex - ./freq/aiofreq --sample-rate 4000 --fft-samples 2048
+	// but there is some nuance still to figure out because:
+	// ./freq/aiofreq --sample-rate 4000 --fft-samples 1000
+	// causes a segfault. in fact fft-samples for any number less than 1000
+	// causes a segfault, and any number greater than 1000 causes nans
+	build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rstream.total_samples, (float)fft_fmin);
 	build_draw_config(&draw_config);
+
+	if (nbars > 0) {
+		draw_config.nbars = nbars;
+	}
 
 	printf("BEFORE FOR LOOP\n\n");
 	for (;;) {
@@ -90,7 +168,7 @@ main(int argc, char *argv[])
 		}
 
 		if (option == DRAW_INFO) {
-			option = draw_info(rctrl, rstream);
+			option = draw_info(rctrl, rstream, fft_config);
 		} else if (option == DRAW_FREQ) {
 			option = draw_frequency(rctrl, rstream, fft_config,
 			    draw_config);

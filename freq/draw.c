@@ -34,6 +34,37 @@ print_ctrl(audio_ctrl_t ctrl)
 	    ctrl.config.precision, ctrl.config.channels, config_encoding);
 }
 
+static void
+print_stream(audio_stream_t audio_stream)
+{
+	const char *config_encoding;
+
+	config_encoding = get_encoding_name(audio_stream.encoding);
+
+	printw("Audio Stream\n"
+		"\tchannels:\t\t%d\n"
+		"\tmilliseconds:\t\t%d\n"
+		"\tprecision:\t\t%d\n"
+		"\ttotal_size:\t\t%d\n"
+		"\ttotal_samples:\t\t%d\n"
+		"\tencoding:\t\t%s\n",
+		audio_stream.channels, audio_stream.milliseconds, audio_stream.precision, audio_stream.total_size, audio_stream.total_samples, config_encoding);
+}
+
+static void
+print_fft_config(fft_config_t config)
+{
+	printw("FFT\n"
+		"\tfs:\t\t%d\n"
+		"\tnbins:\t\t%d\n"
+		"\tnframes:\t\t%d\n"
+		"\tnsamples:\t\t%d\n"
+		"\ttotal_samples:\t\t%d\n"
+		"\tfmin:\t\t%f\n"
+		"\tfmax:\t\t%f\n",
+		config.fs, config.nbins, config.nframes, config.nsamples, config.total_samples,config.fmin,config.fmax);
+}
+
 /*
  * Check if the user pressed any of the navigation options
  */
@@ -58,7 +89,7 @@ check_options(int keypress)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream)
+draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config)
 {
 	char keypress;
 	int option;
@@ -66,6 +97,8 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream)
 	move(0, 0);
 	nodelay(stdscr, FALSE);
 	print_ctrl(ctrl);
+	print_stream(audio_stream);
+	print_fft_config(fft_config);
 	for (;;) {
 		keypress = (char)getch();
 		option = check_options(keypress);
@@ -176,6 +209,8 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 				continue;
 
 			avg = bars[i].magnitude / (float)bars[i].nbins;
+			// TODO make this a separat pane or something
+			mvprintw((int)j, 0, "%f - %f: %f - %f / %d", bars[i].fmin, bars[i].fmax, bars[i].magnitude, avg, bars[i].nbins);
 			avg = ceilf(avg * FREQ_SCALE_FACTOR);
 			scaled_magnitude = fminf(avg,
 			    (float)(draw_config.max_h - draw_config.y_padding));
