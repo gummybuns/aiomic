@@ -1,5 +1,6 @@
 #include "fft.h"
 #include <math.h>
+#include "error_codes.h"
 
 /*
  * Helper function to do the fft math
@@ -71,6 +72,15 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
 int
 build_fft_config(fft_config_t *config, u_int nsamples, u_int fs, u_int total_samples, float fmin)
 {
+
+	if (total_samples < nsamples) {
+		return E_FFT_CONFIG_TOTAL_SAMPLES;
+	}
+
+	if (!(nsamples > 0 && (nsamples & (nsamples - 1)) == 0)) {
+		return E_FFT_CONFIG_NSAMPLES_BY_2;
+	}
+
 	config->nsamples = nsamples;
 	config->nbins = nsamples / 2;
 	config->fmin = fmin;
