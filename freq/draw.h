@@ -10,6 +10,7 @@
 #define DRAW_RECORD 1
 #define DRAW_INFO 2
 #define DRAW_FREQ 3
+#define DRAW_DEBUG 4
 
 #define FREQ_SCALE_FACTOR 1.2f
 #define DEFAULT_BAR_COUNT 50
@@ -17,6 +18,8 @@
 #define PADDING_PCT 0.1f
 
 typedef struct bar_t {
+	WINDOW *win; /* the window representing the bar */
+	WINDOW *shadow; /* overwrites the previous bar render */
 	float fmin;  /* minimum frequency of the bar */
 	float fmax;  /* maximum frequency of the bar */
 	u_int nbins; /* number of bins represented in the bar */

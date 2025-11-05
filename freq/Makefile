@@ -6,6 +6,6 @@ SRCS+=	main.c draw.c fft.c
 LDADD+=	-lcurses -lm -g
 DPADD+=	${LIBCURSES} ${LIBM}
 
-WARNS=	6
+#WARNS=	6
 
 .include <bsd.prog.mk>

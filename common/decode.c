@@ -35,6 +35,7 @@ __RCSID("$NetBSD: decode.c,v 1.1.8.1 2024/03/12 12:47:40 martin Exp $");
 #include <sys/types.h>
 #include <sys/time.h>
 
+#include <curses.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
@@ -69,4 +70,28 @@ decode_uint(const char *arg, unsigned *intp)
 		return;
 	}
 	errx(1, "argument `%s' not a valid integer", arg);
+}
+
+void
+decode_color(const char *arg, short *c)
+{
+	if (strcasecmp(arg, "black") == 0) {
+		*c = COLOR_BLACK;
+	} else if (strcasecmp(arg, "red") == 0) {
+		*c = COLOR_RED;
+	} else if (strcasecmp(arg, "green") == 0) {
+		*c = COLOR_GREEN;
+	} else if (strcasecmp(arg, "yellow") == 0) {
+		*c = COLOR_YELLOW;
+	} else if (strcasecmp(arg, "blue") == 0) {
+		*c = COLOR_BLUE;
+	} else if (strcasecmp(arg, "magenta") == 0) {
+		*c = COLOR_MAGENTA;
+	} else if (strcasecmp(arg, "cyan") == 0) {
+		*c = COLOR_CYAN;
+	} else if (strcasecmp(arg, "white") == 0) {
+		*c = COLOR_WHITE;
+	} else {
+		errx(1, "%s is not a valid color", arg);
+	}
 }

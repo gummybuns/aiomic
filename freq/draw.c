@@ -77,6 +77,8 @@ check_options(int keypress)
 		return DRAW_EXIT;
 	} else if (keypress == 'F') {
 		return DRAW_FREQ;
+	} else if (keypress == 'D') {
+		return DRAW_DEBUG;
 	} else {
 		return 0;
 	}
@@ -130,6 +132,8 @@ reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
 		    powf(fft_config.fmax / fft_config.fmin, frac_end);
 		bars[i].magnitude = 0.0f;
 		bars[i].nbins = 0;
+
+		//delwin(bars[i].win);
 	}
 
 	return 0;
@@ -146,21 +150,29 @@ int
 draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
     fft_config_t fft_config, draw_config_t draw_config)
 {
-	char keypress;
-	int active_bars, draw_start, option, res, title_center;
+	char keypress, debug_on;
+	int active_bars, draw_start, option, res, scroll_pos;
 	u_int i, j;
 	float avg, freq, scaled_magnitude;
 	u_char data[audio_stream.total_size];
 	float pcm[audio_stream.total_samples];
 	bar_t bars[draw_config.nbars];
 	bin_t bins[fft_config.nbins];
+	WINDOW *dpad, *fwin;
 
-	title_center = draw_config.cols / 2 - 10;
-
-	mvprintw(0, title_center, "Measure Mic Frequency\n");
-	refresh();
+	debug_on = 0;
+	dpad = NULL;
+	scroll_pos = 0;
 
 	nodelay(stdscr, TRUE);
+
+	fwin = newwin(draw_config.rows, draw_config.cols, 0, 0);
+	wrefresh(fwin);
+
+	for (i = 0; i < draw_config.nbars; i++) {
+		bars[i].win = NULL;
+	}
+
 	for (;;) {
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
@@ -202,30 +214,81 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		}
 
 		draw_start = (int)draw_config.x_padding +
-			     (int)(draw_config.max_w - active_bars) / 2;
+			     (int)(draw_config.max_w - active_bars * (int)draw_config.bar_width - active_bars * (int)draw_config.bar_space) / 2;
 		j = 0;
+
+		werase(fwin);
 		for (i = 0; i < draw_config.nbars; i++) {
 			if (bars[i].nbins <= 0)
 				continue;
 
 			avg = bars[i].magnitude / (float)bars[i].nbins;
-			// TODO make this a separat pane or something
-			mvprintw((int)j, 0, "%f - %f: %f - %f / %d", bars[i].fmin, bars[i].fmax, bars[i].magnitude, avg, bars[i].nbins);
 			avg = ceilf(avg * FREQ_SCALE_FACTOR);
 			scaled_magnitude = fminf(avg,
 			    (float)(draw_config.max_h - draw_config.y_padding));
-			mvvline(draw_config.y_padding, (int)j + draw_start, ' ',
-			    draw_config.max_h);
-			mvvline(draw_config.max_h - (int)scaled_magnitude,
-			    (int)j + draw_start, '|', (int)scaled_magnitude);
+			// need at least a height of 2 to draw a box
+			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
+
+			bars[i].win = subwin(fwin,(int) scaled_magnitude, (int)draw_config.bar_width, draw_config.max_h - (int)scaled_magnitude, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
+
+			if (draw_config.use_color > 0) {
+				//wbkgd(bars[i].shadow, COLOR_PAIR(1));
+				wbkgd(bars[i].win, COLOR_PAIR(1) | A_REVERSE);
+			} else {
+				//wborder(bars[i].shadow, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+				box(bars[i].win, 0, 0);
+			}
+			//wnoutrefresh(bars[i].shadow);
+			//wnoutrefresh(bars[i].win);
 			j++;
 		}
-		refresh();
+		//wrefresh(fwin);
+		wnoutrefresh(fwin);
+
+		/* i have to create a data structure to define the debug
+		 * window config. its getting too much at this point...
+		 */
+		if (debug_on == 1) {
+			i = 0;
+			avg = bars[i].magnitude / (float)bars[i].nbins;
+			wprintw(dpad, " Bar %d (%.2f - %.2f):\n", i, bars[i].fmin, bars[i].fmax);
+			for (j = 0; j < fft_config.nbins; j++) {
+				if (bins[j].frequency < fft_config.fmin) continue;
+				while(bins[j].frequency > bars[i].fmax) {
+					i++;
+					avg = bars[i].magnitude / (float)bars[i].nbins;
+					wprintw(dpad, " Bar %d (%.2f - %.2f):\n", i, bars[i].fmin, bars[i].fmax);
+				}
+				wprintw(dpad,"\tBin %d (%.2f): %.2f\n", j, bins[j].frequency, bins[j].magnitude);
+			}
+			wscrl(dpad, scroll_pos);
+			wmove(dpad, 10, 100);
+			box(dpad, 0, 0);
+			//wnoutrefresh(dpad);
+			pnoutrefresh(dpad, 0, 0, 0, draw_config.cols / 2 -1, 10, draw_config.cols);
+		}
+		doupdate();
 
 		/* listen for input */
+		flushinp();
 		keypress = (char)getch();
+		if (keypress == 'j') {
+			scroll_pos++;
+		}
+		if (keypress == 'k') {
+			scroll_pos--;
+		}
+		if (keypress == 'D' && debug_on == 0) {
+			debug_on = 1;
+			dpad = newpad(draw_config.nbars + fft_config.nbins - 1, draw_config.cols / 2);
+			scrollok(dpad, TRUE);
+		} else if (keypress == 'D' && debug_on == 1) {
+			debug_on = 0;
+			delwin(dpad);
+		}
 		option = check_options(keypress);
-		if (option != 0 && option != DRAW_FREQ) {
+		if (option != 0 && option != DRAW_FREQ && option != DRAW_DEBUG) {
+			// TODO free bar windows
 			return option;
 		}
 	}
@@ -239,7 +302,7 @@ draw_options(void)
 {
 	int row;
 	row = getmaxy(stdscr);
-	mvprintw(row - 1, 0, "OPTIONS: ");
+	mvprintw(row - 2, 1, "OPTIONS: ");
 	printw("F: FREQ / I: INFO / Q: QUIT");
 	refresh();
 }

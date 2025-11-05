@@ -20,11 +20,13 @@
 
 #define DEFAULT_STREAM_DURATION 250
 #define DEFAULT_PATH "/dev/sound"
+#define DEFAULT_BAR_WIDTH 4
 
 static inline int
 build_draw_config(draw_config_t *config)
 {
 	int rows, cols, x_padding, y_padding;
+	u_int computed_width;
 
 	getmaxyx(stdscr, rows, cols);
 	x_padding = (int)((float)cols * PADDING_PCT);
@@ -37,20 +39,24 @@ build_draw_config(draw_config_t *config)
 	config->max_h = rows - y_padding * 2;
 	config->max_w = cols - x_padding * 2;
 
-	if (config->nbars == 0) {
-		config->nbars = (u_int)config->max_w;
+	if (config->bar_width == 0) {
+		config->bar_width = DEFAULT_BAR_WIDTH;
 	}
 
-	if (config->nbars > (u_int)config->max_w) {
+	if (config->nbars == 0) {
+		config->nbars = (u_int)config->max_w/(config->bar_width + config->bar_space);
+	}
+
+	computed_width = config->nbars * config->bar_width + config->nbars * config->bar_space;
+	if ( computed_width > (u_int)config->max_w) {
 		return E_DRW_CONFIG_NBARS;
 	}
 
 	return 0;
 }
 
-static const char * shortopts = "b:c:d:e:f:m:n:p:s:M:";
+static const char * shortopts = "c:d:e:f:m:n:p:s:w:C:M:U";
 static struct option longopts[] = {
-	{ "buffer-size", 	required_argument,	NULL, 	'b' },
 	{ "channels", 		required_argument, 	NULL,	'c' },
 	{ "device", 		required_argument, 	NULL,	'd' },
 	{ "encoding",		required_argument,	NULL,	'e' },
@@ -59,7 +65,10 @@ static struct option longopts[] = {
 	{ "fft-fmin",		required_argument,	NULL,	'm' },
 	{ "precision",		required_argument,	NULL,	'p' },
 	{ "sample-rate",	required_argument,	NULL,	's' },
-	{ "milliseconds",	required_argument,	NULL,	'M' }
+	{ "bar-width",		required_argument,	NULL,	'w' },
+	{ "color",		required_argument,	NULL,	'C' },
+	{ "milliseconds",	required_argument,	NULL,	'M' },
+	{ "use-colors",		no_argument,		NULL,	'U' }
 };
 
 int
@@ -84,6 +93,10 @@ main(int argc, char *argv[])
 	audio_config.precision = 0;
 	audio_config.sample_rate = 0;
 	draw_config.nbars = 0;
+	draw_config.bar_width = 0;
+	draw_config.bar_color = -1;
+	draw_config.bar_space = 0;
+	draw_config.use_color = 0;
 	fft_samples = DEFAULT_NSAMPLES;
 	fft_fmin = DEFAULT_FMIN;
 	ms = DEFAULT_STREAM_DURATION;
@@ -118,8 +131,20 @@ main(int argc, char *argv[])
 		case 's':
 			decode_uint(optarg, &(audio_config.sample_rate));
 			break;
+		case 'w':
+			decode_uint(optarg, &(draw_config.bar_width));
+			break;
+		case 'C':
+			draw_config.use_color = 1;
+			decode_color(optarg, &(draw_config.bar_color));
+			draw_config.bar_space = 1;
+			break;
 		case 'M':
 			decode_uint(optarg, &ms);
+			break;
+		case 'U':
+			draw_config.use_color = 1;
+			draw_config.bar_space = 1;
 			break;
 		default:
 			// TODO - usage()
@@ -143,6 +168,7 @@ main(int argc, char *argv[])
 		err(1, "Failed to build audio stream: %d", res);
 	}
 
+
 	if (initscr() == NULL) {
 		err(1, "can't initialize curses");
 	}
@@ -150,20 +176,19 @@ main(int argc, char *argv[])
 	noecho();
 	curs_set(0);
 
+	if (draw_config.use_color > 0 && !has_colors()) {
+		err(1, "Terminal does not have colors: %d", E_NO_COLORS);
+	}
+
+	if (draw_config.use_color > 0) {
+		start_color();
+		use_default_colors();
+		init_pair(1, draw_config.bar_color, -1);
+		init_pair(2, COLOR_RED, COLOR_BLUE);
+	}
+
 	option = DRAW_INFO;
 
-	// TODO - now that there is user input it is posible to get nans
-	// this happens when the fft_config.nsamples is less than the
-	// fft_config.total_samples (which is from the audio_stream)
-	// ./aiofreq -s 4092 shows this. we get 1023 total_samples but
-	// DEFAULT_NSAMPLES is 1024
-	// TOTAL_SAMPLES MUST BE BIGGER THAN NSAMPLES
-	// NSAMPLES MUST BE A POWER OF 2
-	// ex - ./freq/aiofreq --sample-rate 4000 --fft-samples 2048
-	// but there is some nuance still to figure out because:
-	// ./freq/aiofreq --sample-rate 4000 --fft-samples 1000
-	// causes a segfault. in fact fft-samples for any number less than 1000
-	// causes a segfault, and any number greater than 1000 causes nans
 	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rstream.total_samples, (float)fft_fmin);
 	if (res != 0) {
 		err(1, "Failed to initialize fft_config: %d", res);
