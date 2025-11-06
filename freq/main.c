@@ -22,7 +22,6 @@
 #define DEFAULT_PATH "/dev/sound"
 #define DEFAULT_BAR_WIDTH 4
 #define DEFAULT_BOX_HEIGHT 2
-#define MAX_NBOXES = COLOR_PAIRS - 2
 
 static inline int
 build_draw_config(draw_config_t *config)
@@ -62,16 +61,19 @@ build_draw_config(draw_config_t *config)
 		return E_DRW_CONFIG_NBOXES;
 	}
 
-	//err(1,"bh: %d / bn: %d, mh: %d", config->box_height, config->nboxes, config->max_h);
 	computed = config->nbars * config->bar_width + config->nbars * config->bar_space;
 	if (computed > (u_int)config->max_w) {
 		return E_DRW_CONFIG_NBARS;
 	}
 
+	if (config->use_color && config->use_boxes) {
+		config->ncolors = (u_int)fminf((float)config->nboxes, COLOR_PAIRS - 2);
+	}
+
 	return 0;
 }
 
-static const char * shortopts = "c:d:e:f:m:n:p:s:w:C:M:XU";
+static const char * shortopts = "c:d:e:f:m:n:p:s:w:C:E:M:XU";
 static struct option longopts[] = {
 	{ "channels", 		required_argument, 	NULL,	'c' },
 	{ "device", 		required_argument, 	NULL,	'd' },
@@ -83,6 +85,7 @@ static struct option longopts[] = {
 	{ "sample-rate",	required_argument,	NULL,	's' },
 	{ "bar-width",		required_argument,	NULL,	'w' },
 	{ "color",			required_argument,	NULL,	'C' },
+	{ "color-end",		required_argument,	NULL,	'E' },
 	{ "milliseconds",	required_argument,	NULL,	'M' },
 	{ "use-colors",		no_argument,		NULL,	'U' },
 	{ "use-boxes",		no_argument,		NULL,	'X' },
@@ -112,10 +115,12 @@ main(int argc, char *argv[])
 	draw_config.nbars = 0;
 	draw_config.bar_width = 0;
 	draw_config.bar_color = -1;
+	draw_config.bar_color2 = -1;
 	draw_config.bar_space = 0;
 	draw_config.use_color = 0;
 	draw_config.use_boxes = 0;
 	draw_config.box_space = 0;
+	draw_config.ncolors = 0;
 	fft_samples = DEFAULT_NSAMPLES;
 	fft_fmin = DEFAULT_FMIN;
 	ms = DEFAULT_STREAM_DURATION;
@@ -158,6 +163,13 @@ main(int argc, char *argv[])
 			decode_color(optarg, &(draw_config.bar_color));
 			draw_config.bar_space = 1;
 			draw_config.box_space = 1;
+			draw_config.ncolors = 1;
+			break;
+		case 'E':
+			draw_config.use_color = 1;
+			decode_color(optarg, &(draw_config.bar_color2));
+			draw_config.bar_space = 1;
+			draw_config.box_space = 1;
 			break;
 		case 'M':
 			decode_uint(optarg, &ms);
@@ -166,6 +178,7 @@ main(int argc, char *argv[])
 			draw_config.use_color = 1;
 			draw_config.bar_space = 1;
 			draw_config.box_space = 1;
+			draw_config.ncolors = 1;
 			break;
 		case 'X':
 			draw_config.use_boxes = 1;
@@ -207,8 +220,8 @@ main(int argc, char *argv[])
 	if (draw_config.use_color > 0) {
 		start_color();
 		use_default_colors();
-		init_pair(1, draw_config.bar_color, -1);
-		init_pair(2, COLOR_RED, COLOR_BLUE);
+		//init_pair(1, draw_config.bar_color, -1);
+		init_pair(1, 196, -1);
 	}
 
 	option = DRAW_INFO;
@@ -222,6 +235,27 @@ main(int argc, char *argv[])
 		err(1, "Failed to initialize draw_config: %d", res);
 	}
 	build_draw_config(&draw_config);
+
+	if (draw_config.ncolors > 1 && draw_config.bar_color != draw_config.bar_color2 && draw_config.bar_color2 != -1) {
+		if (!can_change_color()) {
+			err(1, "cannot change colors. %d", draw_config.ncolors);
+		}
+		short r1, g1, b1;
+		short r2, g2, b2;
+		short r_interp, g_interp, b_interp;
+		int t;
+
+		t = (int)draw_config.ncolors;
+		color_content(draw_config.bar_color, &r1, &g1, &b1);
+		color_content(draw_config.bar_color2, &r2, &g2, &b2);
+		for (int c = 0; c < draw_config.ncolors; c++) {
+			r_interp = (int)((1-t) * r1 + t * r2);
+			g_interp = (int)((1-t) * g1 + t * g2);
+			b_interp = (int)((1-t) * b1 + t * b2);
+			init_color(c, r_interp, g_interp, b_interp);
+			init_pair(c, c, -1);
+		}
+	}
 
 	for (;;) {
 		draw_options();
