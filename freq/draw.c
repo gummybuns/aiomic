@@ -233,10 +233,12 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			// TODO - i need to delwin and clean up everything each iteration
 			k = 0;
 			if (draw_config.nboxes == 1) {
+				delwin(bwin[i][0]);
 				bwin[i][0] = subwin(fwin,(int) scaled_magnitude, (int)draw_config.bar_width, draw_config.max_h - (int)scaled_magnitude, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
 			} else {
 				draw_height = 0;
 				while (draw_height < scaled_magnitude) {
+					delwin(bwin[i][k]);
 					bwin[i][k] = subwin(fwin, (int)draw_config.box_height, (int)draw_config.bar_width, draw_config.max_h - (int)k*draw_config.box_height - (int)k*draw_config.box_space, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
 					draw_height += (draw_config.box_height + draw_config.box_space);
 					k++;
@@ -247,7 +249,9 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			if (draw_config.use_color) {
 				//wbkgd(bars[i].win, COLOR_PAIR(1) | A_REVERSE);
 				do {
-					wbkgd(bwin[i][k], COLOR_PAIR(1) | A_REVERSE);
+					// TODO i dont know why i need pidx + 1 but i do
+					int pidx = draw_config.ncolors > 1 ? k + 1 : 1;
+					wbkgd(bwin[i][k], COLOR_PAIR(pidx) | A_REVERSE);
 					k--;
 				} while (k >= 0);
 			} else {

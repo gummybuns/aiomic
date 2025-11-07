@@ -66,8 +66,8 @@ build_draw_config(draw_config_t *config)
 		return E_DRW_CONFIG_NBARS;
 	}
 
-	if (config->use_color && config->use_boxes) {
-		config->ncolors = (u_int)fminf((float)config->nboxes, COLOR_PAIRS - 2);
+	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
+		config->ncolors = (u_int)fminf((float)config->nboxes, COLOR_PAIRS - 1);
 	}
 
 	return 0;
@@ -192,7 +192,6 @@ main(int argc, char *argv[])
 	res = build_audio_ctrl(&rctrl, path, AUMODE_RECORD);
 	if (res != 0) {
 		err(1, "Failed to build record audio controller: %d", res);
-
 	}
 
 	res = update_audio_ctrl(&rctrl, audio_config);
@@ -217,13 +216,6 @@ main(int argc, char *argv[])
 		err(1, "Terminal does not have colors: %d", E_NO_COLORS);
 	}
 
-	if (draw_config.use_color > 0) {
-		start_color();
-		use_default_colors();
-		//init_pair(1, draw_config.bar_color, -1);
-		init_pair(1, 196, -1);
-	}
-
 	option = DRAW_INFO;
 
 	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rstream.total_samples, (float)fft_fmin);
@@ -234,26 +226,48 @@ main(int argc, char *argv[])
 	if ((res = build_draw_config(&draw_config)) != 0) {
 		err(1, "Failed to initialize draw_config: %d", res);
 	}
+	// TODO - this is dumb but you need to start-color before you build
+	// draw config because it depends on some methods in there
+	if (draw_config.use_color) {
+		if (!has_colors()) {
+			err(1, "Termain does not support colors %d", E_NO_COLORS);
+		}
+		start_color();
+	}
 	build_draw_config(&draw_config);
 
-	if (draw_config.ncolors > 1 && draw_config.bar_color != draw_config.bar_color2 && draw_config.bar_color2 != -1) {
-		if (!can_change_color()) {
-			err(1, "cannot change colors. %d", draw_config.ncolors);
-		}
-		short r1, g1, b1;
-		short r2, g2, b2;
-		short r_interp, g_interp, b_interp;
-		int t;
+	if (draw_config.use_color) {
+		use_default_colors();
+		if (draw_config.ncolors <= 1) {
+			init_pair(1, draw_config.bar_color, -1);
+		} else {
+			if (!can_change_color()) {
+				err(1, "cannot change colors. %d", draw_config.ncolors);
+			}
+			short r1, g1, b1;
+			short r2, g2, b2;
+			short r_interp, g_interp, b_interp;
+			float t;
 
-		t = (int)draw_config.ncolors;
-		color_content(draw_config.bar_color, &r1, &g1, &b1);
-		color_content(draw_config.bar_color2, &r2, &g2, &b2);
-		for (int c = 0; c < draw_config.ncolors; c++) {
-			r_interp = (int)((1-t) * r1 + t * r2);
-			g_interp = (int)((1-t) * g1 + t * g2);
-			b_interp = (int)((1-t) * b1 + t * b2);
-			init_color(c, r_interp, g_interp, b_interp);
-			init_pair(c, c, -1);
+			/* TODO - this is working but it is actually changing
+			 * the terminal colors? like when i do a git status
+			 * the diff is now blue instead of red?
+			 *
+			 * do i have to clean up the init_colors somehow?
+			 */
+			color_content(draw_config.bar_color, &r1, &g1, &b1);
+			color_content(draw_config.bar_color2, &r2, &g2, &b2);
+			for (int c = 0; c < draw_config.ncolors; c++) {
+				t = (float)c / (float)(draw_config.ncolors - 1);
+				r_interp = (int)((1-t) * r1 + t * r2);
+				g_interp = (int)((1-t) * g1 + t * g2);
+				b_interp = (int)((1-t) * b1 + t * b2);
+				if((res = init_color(c, r_interp, g_interp, b_interp)) != 0) {
+					err(1, "could not set color %d out of %d- %d", c, draw_config.ncolors, res);
+				}
+				printf("%d - t=%f - %d / %d / %d\n", c, t, r_interp, g_interp, b_interp);
+				init_pair(c, c, -1);
+			}
 		}
 	}
 
