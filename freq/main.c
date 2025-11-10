@@ -49,7 +49,6 @@ build_draw_config(draw_config_t *config)
 	}
 
 	if (config->use_boxes) {
-		config->box_height = DEFAULT_BOX_HEIGHT;
 		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
 	} else {
 		config->nboxes = 1;
@@ -70,25 +69,28 @@ build_draw_config(draw_config_t *config)
 		config->ncolors = (u_int)fminf((float)config->nboxes, COLOR_PAIRS - 1);
 	}
 
+	// TODO - box-height cannot be zero we need to validate that
 	return 0;
 }
 
-static const char * shortopts = "c:d:e:f:m:n:p:s:w:C:E:M:XU";
+static const char * shortopts = "c:d:e:f:m:p:s:H:N:W:C:E:M:S:XU";
 static struct option longopts[] = {
 	{ "channels", 		required_argument, 	NULL,	'c' },
 	{ "device", 		required_argument, 	NULL,	'd' },
 	{ "encoding",		required_argument,	NULL,	'e' },
 	{ "fft-samples",	required_argument,	NULL,	'f' },
-	{ "num-bars",		required_argument,	NULL,	'n' },
 	{ "fft-fmin",		required_argument,	NULL,	'm' },
 	{ "precision",		required_argument,	NULL,	'p' },
 	{ "sample-rate",	required_argument,	NULL,	's' },
-	{ "bar-width",		required_argument,	NULL,	'w' },
 	{ "color",			required_argument,	NULL,	'C' },
 	{ "color-end",		required_argument,	NULL,	'E' },
+	{ "box-height",		required_argument,	NULL,	'H' },
 	{ "milliseconds",	required_argument,	NULL,	'M' },
+	{ "num-bars",		required_argument,	NULL,	'N' },
+	{ "box-space",		required_argument,	NULL,	'S' },
 	{ "use-colors",		no_argument,		NULL,	'U' },
 	{ "use-boxes",		no_argument,		NULL,	'X' },
+	{ "bar-width",		required_argument,	NULL,	'W' },
 };
 
 int
@@ -119,7 +121,8 @@ main(int argc, char *argv[])
 	draw_config.bar_space = 0;
 	draw_config.use_color = 0;
 	draw_config.use_boxes = 0;
-	draw_config.box_space = 0;
+	draw_config.box_space = 1;
+	draw_config.box_height = DEFAULT_BOX_HEIGHT;
 	draw_config.ncolors = 0;
 	fft_samples = DEFAULT_NSAMPLES;
 	fft_fmin = DEFAULT_FMIN;
@@ -146,42 +149,45 @@ main(int argc, char *argv[])
 		case 'm':
 			decode_uint(optarg, &fft_fmin);
 			break;
-		case 'n':
-			decode_uint(optarg, &(draw_config.nbars));
-			break;
 		case 'p':
 			decode_uint(optarg, &(audio_config.precision));
 			break;
 		case 's':
 			decode_uint(optarg, &(audio_config.sample_rate));
 			break;
-		case 'w':
-			decode_uint(optarg, &(draw_config.bar_width));
+		case 'H':
+			decode_uint(optarg, &(draw_config.box_height));
+			break;
+		case 'N':
+			decode_uint(optarg, &(draw_config.nbars));
 			break;
 		case 'C':
 			draw_config.use_color = 1;
 			decode_color(optarg, &(draw_config.bar_color));
 			draw_config.bar_space = 1;
-			draw_config.box_space = 1;
 			draw_config.ncolors = 1;
 			break;
 		case 'E':
 			draw_config.use_color = 1;
 			decode_color(optarg, &(draw_config.bar_color2));
 			draw_config.bar_space = 1;
-			draw_config.box_space = 1;
 			break;
 		case 'M':
 			decode_uint(optarg, &ms);
 			break;
+		case 'S':
+			decode_uint(optarg, &(draw_config.box_space));
+			break;
 		case 'U':
 			draw_config.use_color = 1;
 			draw_config.bar_space = 1;
-			draw_config.box_space = 1;
 			draw_config.ncolors = 1;
 			break;
 		case 'X':
 			draw_config.use_boxes = 1;
+			break;
+		case 'W':
+			decode_uint(optarg, &(draw_config.bar_width));
 			break;
 		default:
 			// TODO - usage()
@@ -289,6 +295,9 @@ main(int argc, char *argv[])
 		clear();
 	}
 
+	if(draw_config.use_color) {
+		use_default_colors();
+	}
 	endwin();
 	return 0;
 }

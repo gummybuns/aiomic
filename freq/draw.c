@@ -237,7 +237,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 				bwin[i][0] = subwin(fwin,(int) scaled_magnitude, (int)draw_config.bar_width, draw_config.max_h - (int)scaled_magnitude, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
 			} else {
 				draw_height = 0;
-				while (draw_height < scaled_magnitude) {
+				while (draw_height < (int) ceilf(scaled_magnitude)) {
 					delwin(bwin[i][k]);
 					bwin[i][k] = subwin(fwin, (int)draw_config.box_height, (int)draw_config.bar_width, draw_config.max_h - (int)k*draw_config.box_height - (int)k*draw_config.box_space, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
 					draw_height += (draw_config.box_height + draw_config.box_space);
