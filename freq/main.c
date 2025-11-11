@@ -52,10 +52,17 @@ build_draw_config(draw_config_t *config)
 
 	if (config->nbars == 0) {
 		config->nbars = (u_int)config->max_w/(config->bar_width + config->bar_space);
+
+		if (config->nbars <= 0) {
+			return E_DRW_CONFIG_NBARS_ZERO;
+		}
 	}
 
 	if (config->use_boxes) {
 		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
+		if (config->nboxes <= 0) {
+			return E_DRW_CONFIG_NBOXES_ZERO;
+		}
 	} else {
 		config->nboxes = 1;
 		config->box_height = config->max_h / (config->nboxes + config->box_space);
@@ -71,11 +78,14 @@ build_draw_config(draw_config_t *config)
 		return E_DRW_CONFIG_NBARS;
 	}
 
+	if (config->box_height <= 0) {
+		return E_DRW_CONFIG_BOX_HEIGHT_ZERO;
+	}
+
 	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
 		config->ncolors = (u_int)fminf((float)config->nboxes, COLOR_PAIRS - 1);
 	}
 
-	// TODO - box-height cannot be zero we need to validate that
 	return 0;
 }
 
@@ -136,10 +146,6 @@ main(int argc, char *argv[])
 
 	while ((ch = getopt_long(argc, argv,shortopts, longopts, NULL)) != -1) {
 		switch (ch) {
-		case 'b':
-			// TODO figure this out
-			audio_config.buffer_size = (u_int)strsuftoll("read buffer size", optarg, 1, UINT_MAX);
-			break;
 		case 'c':
 			decode_uint(optarg, &(audio_config.channels));
 			break;
@@ -201,48 +207,43 @@ main(int argc, char *argv[])
 		}
 	}
 
-	res = build_audio_ctrl(&rctrl, path, AUMODE_RECORD);
-	if (res != 0) {
-		err(1, "Failed to build record audio controller: %d", res);
-	}
-
-	res = update_audio_ctrl(&rctrl, audio_config);
-	if (res != 0) {
-		err(1, "Failed to set audio controller: %d", res);
-	}
-
-	res = build_stream_from_ctrl(rctrl, ms, &rstream);
-	if (res != 0) {
-		err(1, "Failed to build audio stream: %d", res);
-	}
-
-
 	if (initscr() == NULL) {
 		err(1, "can't initialize curses");
 	}
+
 	cbreak();
 	noecho();
 	curs_set(0);
 
-	if (draw_config.use_color > 0 && !has_colors()) {
-		err(1, "Terminal does not have colors: %d", E_NO_COLORS);
+	if ((res = build_audio_ctrl(&rctrl, path, AUMODE_RECORD)) != 0) {
+		goto handle_error;
+	}
+
+	if ((res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
+		goto handle_error;
+	}
+
+	if ((res = build_stream_from_ctrl(rctrl, ms, &rstream)) != 0) {
+		goto handle_error;
 	}
 
 	option = DRAW_INFO;
 
 	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rstream.total_samples, (float)fft_fmin);
 	if (res != 0) {
-		err(1, "Failed to initialize fft_config: %d", res);
+		goto handle_error;
 	}
 
 	if ((res = build_draw_config(&draw_config)) != 0) {
-		err(1, "Failed to initialize draw_config: %d", res);
+		goto handle_error;
 	}
+
 	// TODO - this is dumb but you need to start-color before you build
 	// draw config because it depends on some methods in there
 	if (draw_config.use_color) {
 		if (!has_colors()) {
-			err(1, "Termain does not support colors %d", E_NO_COLORS);
+			res = E_NO_COLORS;
+			goto handle_error;
 		}
 		start_color();
 	}
@@ -254,7 +255,8 @@ main(int argc, char *argv[])
 			init_pair(1, draw_config.bar_color, -1);
 		} else {
 			if (!can_change_color()) {
-				err(1, "cannot change colors. %d", draw_config.ncolors);
+				res = E_CHANGE_COLORS;
+				goto handle_error;
 			}
 			short r1, g1, b1;
 			short r2, g2, b2;
@@ -275,7 +277,8 @@ main(int argc, char *argv[])
 				g_interp = (int)((1-t) * g1 + t * g2);
 				b_interp = (int)((1-t) * b1 + t * b2);
 				if((res = init_color(c, r_interp, g_interp, b_interp)) != 0) {
-					err(1, "could not set color %d out of %d- %d", c, draw_config.ncolors, res);
+					res = E_INIT_COLOR;
+					goto handle_error;
 				}
 				printf("%d - t=%f - %d / %d / %d\n", c, t, r_interp, g_interp, b_interp);
 				init_pair(c, c, -1);
@@ -287,7 +290,8 @@ main(int argc, char *argv[])
 		draw_options();
 
 		if (option >= E_UNHANDLED) {
-			err(1, "Unhandled Error: %d", option);
+			res = option;
+			goto handle_error;
 		}
 
 		if (option == DRAW_INFO) {
@@ -301,9 +305,9 @@ main(int argc, char *argv[])
 		clear();
 	}
 
-	if(draw_config.use_color) {
-		use_default_colors();
-	}
 	endwin();
 	return 0;
+handle_error:
+	endwin();
+	errc(EXIT_FAILURE, res, get_error_msg(res));
 }
