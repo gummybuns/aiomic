@@ -1,3 +1,9 @@
+/*
+mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {16000,}  priority: 0
+mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {24000,}  priority: 0
+mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {32000,}  priority: 0
+mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {48000,}  priority: 0
+*/
 #include <sys/audioio.h>
 
 #include <curses.h>
