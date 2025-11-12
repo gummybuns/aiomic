@@ -23,4 +23,6 @@ typedef struct draw_config_t {
 	short bar_color2; /* second color to transition to */
 } draw_config_t;
 
+int validate_draw_config(draw_config_t *config);
+
 #endif

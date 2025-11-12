@@ -1,9 +1,3 @@
-/*
-mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {16000,}  priority: 0
-mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {24000,}  priority: 0
-mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {32000,}  priority: 0
-mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {48000,}  priority: 0
-*/
 #include <sys/audioio.h>
 
 #include <curses.h>
@@ -24,16 +18,20 @@ mode: 2 enc: 6  bits: 16        prec: 16        channels: 1     mask: 0 freq: {4
 #include "error_codes.h"
 #include "fft.h"
 
-#define DEFAULT_STREAM_DURATION 250
+#define UNSET 0
+#define DEFAULT_STREAM_DURATION 150
 #define DEFAULT_PATH "/dev/sound"
 #define DEFAULT_BAR_WIDTH 4
 #define DEFAULT_BOX_HEIGHT 2
+#define DEFAULT_BOX_SPACE 1
+#define DEFAULT_COLOR -1 /* default color index is set to the system colors */
+
+#define IS_UNSET(p) (p == UNSET)
 
 static inline int
 build_draw_config(draw_config_t *config)
 {
 	int rows, cols, x_padding, y_padding;
-	u_int computed;
 
 	getmaxyx(stdscr, rows, cols);
 	x_padding = (int)((float)cols * PADDING_PCT);
@@ -46,40 +44,19 @@ build_draw_config(draw_config_t *config)
 	config->max_h = rows - y_padding * 2;
 	config->max_w = cols - x_padding * 2;
 
-	if (config->bar_width == 0) {
+	if (IS_UNSET(config->bar_width)) {
 		config->bar_width = DEFAULT_BAR_WIDTH;
 	}
 
-	if (config->nbars == 0) {
+	if (IS_UNSET(config->nbars)) {
 		config->nbars = (u_int)config->max_w/(config->bar_width + config->bar_space);
-
-		if (config->nbars <= 0) {
-			return E_DRW_CONFIG_NBARS_ZERO;
-		}
 	}
 
 	if (config->use_boxes) {
 		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
-		if (config->nboxes <= 0) {
-			return E_DRW_CONFIG_NBOXES_ZERO;
-		}
 	} else {
 		config->nboxes = 1;
 		config->box_height = config->max_h / (config->nboxes + config->box_space);
-	}
-
-	computed = config->box_height * config->nboxes + config->box_space * config->nboxes;
-	if (computed > config->max_h) {
-		return E_DRW_CONFIG_NBOXES;
-	}
-
-	computed = config->nbars * config->bar_width + config->nbars * config->bar_space;
-	if (computed > (u_int)config->max_w) {
-		return E_DRW_CONFIG_NBARS;
-	}
-
-	if (config->box_height <= 0) {
-		return E_DRW_CONFIG_BOX_HEIGHT_ZERO;
 	}
 
 	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
@@ -112,9 +89,13 @@ static struct option longopts[] = {
 int
 main(int argc, char *argv[])
 {
-	int ch, option, res;
+	int c, ch, option, res;
 	u_int fft_samples, fft_fmin, ms;
 	const char *path;
+	short r1, g1, b1;
+	short r2, g2, b2;
+	short r_interp, g_interp, b_interp;
+	float t;
 	audio_ctrl_t rctrl;
 	audio_config_t audio_config;
 	audio_stream_t rstream;
@@ -123,26 +104,28 @@ main(int argc, char *argv[])
 
 	setprogname(argv[0]);
 
-	path = DEFAULT_PATH;
+	path =                      DEFAULT_PATH;
 
-	audio_config.buffer_size = 0;
-	audio_config.channels = 0;
-	audio_config.encoding = 0;
-	audio_config.precision = 0;
-	audio_config.sample_rate = 0;
-	draw_config.nbars = 0;
-	draw_config.bar_width = 0;
-	draw_config.bar_color = -1;
-	draw_config.bar_color2 = -1;
-	draw_config.bar_space = 0;
-	draw_config.use_color = 0;
-	draw_config.use_boxes = 0;
-	draw_config.box_space = 1;
-	draw_config.box_height = DEFAULT_BOX_HEIGHT;
-	draw_config.ncolors = 0;
-	fft_samples = DEFAULT_NSAMPLES;
-	fft_fmin = DEFAULT_FMIN;
-	ms = DEFAULT_STREAM_DURATION;
+	audio_config.buffer_size =  UNSET;
+	audio_config.channels =     UNSET;
+	audio_config.encoding =     UNSET;
+	audio_config.precision =    UNSET;
+	audio_config.sample_rate =  UNSET;
+
+	draw_config.nbars =         UNSET;
+	draw_config.bar_width =     UNSET;
+	draw_config.bar_space =     UNSET;
+	draw_config.use_color =     UNSET;
+	draw_config.use_boxes =     UNSET;
+	draw_config.ncolors =       UNSET;
+	draw_config.bar_color =     DEFAULT_COLOR;
+	draw_config.bar_color2 =    DEFAULT_COLOR;
+	draw_config.box_space =     DEFAULT_BOX_SPACE;
+	draw_config.box_height =    DEFAULT_BOX_HEIGHT;
+
+	fft_samples =               DEFAULT_NSAMPLES;
+	fft_fmin =                  DEFAULT_FMIN;
+	ms =                        DEFAULT_STREAM_DURATION;
 
 	while ((ch = getopt_long(argc, argv,shortopts, longopts, NULL)) != -1) {
 		switch (ch) {
@@ -227,7 +210,6 @@ main(int argc, char *argv[])
 		goto handle_error;
 	}
 
-	option = DRAW_INFO;
 
 	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rstream.total_samples, (float)fft_fmin);
 	if (res != 0) {
@@ -247,7 +229,11 @@ main(int argc, char *argv[])
 		}
 		start_color();
 	}
+
 	build_draw_config(&draw_config);
+	if ((res = validate_draw_config(&draw_config)) != 0) {
+		goto handle_error;
+	}
 
 	if (draw_config.use_color) {
 		use_default_colors();
@@ -258,20 +244,10 @@ main(int argc, char *argv[])
 				res = E_CHANGE_COLORS;
 				goto handle_error;
 			}
-			short r1, g1, b1;
-			short r2, g2, b2;
-			short r_interp, g_interp, b_interp;
-			float t;
 
-			/* TODO - this is working but it is actually changing
-			 * the terminal colors? like when i do a git status
-			 * the diff is now blue instead of red?
-			 *
-			 * do i have to clean up the init_colors somehow?
-			 */
 			color_content(draw_config.bar_color, &r1, &g1, &b1);
 			color_content(draw_config.bar_color2, &r2, &g2, &b2);
-			for (int c = 0; c < draw_config.ncolors; c++) {
+			for (c = 0; c < draw_config.ncolors; c++) {
 				t = (float)c / (float)(draw_config.ncolors - 1);
 				r_interp = (int)((1-t) * r1 + t * r2);
 				g_interp = (int)((1-t) * g1 + t * g2);
@@ -280,12 +256,12 @@ main(int argc, char *argv[])
 					res = E_INIT_COLOR;
 					goto handle_error;
 				}
-				printf("%d - t=%f - %d / %d / %d\n", c, t, r_interp, g_interp, b_interp);
 				init_pair(c, c, -1);
 			}
 		}
 	}
 
+	option = DRAW_INFO;
 	for (;;) {
 		draw_options();
 
