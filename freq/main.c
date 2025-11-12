@@ -271,7 +271,7 @@ main(int argc, char *argv[])
 		}
 
 		if (option == DRAW_INFO) {
-			option = draw_info(rctrl, rstream, fft_config);
+			option = draw_info(rctrl, rstream, fft_config, draw_config);
 		} else if (option == DRAW_FREQ) {
 			option = draw_frequency(rctrl, rstream, fft_config,
 			    draw_config);

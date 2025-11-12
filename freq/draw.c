@@ -14,55 +14,77 @@
  * Print details about the audio controller
  */
 static void
-print_ctrl(audio_ctrl_t ctrl)
+print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
 {
 	const char *mode, *config_encoding;
 
 	mode = get_mode(ctrl);
 	config_encoding = get_encoding_name(ctrl.config.encoding);
 
-	printw("Audio Controller\n"
+	wprintw(w, "Audio Controller\n"
 	       "\tDevice:\t\t%s\n"
 	       "\tMode:\t\t%s\n"
-	       "\tConfiguration:\n"
-	       "\t\tbuffer_size:\t\t%d\n"
-	       "\t\tsample_rate:\t\t%d\n"
-	       "\t\tprecision:\t\t%d\n"
-	       "\t\tchannels:\t\t%d\n"
-	       "\t\tencoding:\t\t%s\n",
+	       "\tbuffer_size:\t%d\n"
+	       "\tsample_rate:\t%d\n"
+	       "\tprecision:\t%d\n"
+	       "\tchannels:\t%d\n"
+	       "\tencoding:\t%s\n\n",
 	    ctrl.path, mode, ctrl.config.buffer_size, ctrl.config.sample_rate,
 	    ctrl.config.precision, ctrl.config.channels, config_encoding);
 }
 
 static void
-print_stream(audio_stream_t audio_stream)
+print_stream(WINDOW *w, audio_stream_t audio_stream)
 {
 	const char *config_encoding;
 
 	config_encoding = get_encoding_name(audio_stream.encoding);
 
-	printw("Audio Stream\n"
-		"\tchannels:\t\t%d\n"
-		"\tmilliseconds:\t\t%d\n"
-		"\tprecision:\t\t%d\n"
-		"\ttotal_size:\t\t%d\n"
-		"\ttotal_samples:\t\t%d\n"
-		"\tencoding:\t\t%s\n",
+	wprintw(w, "Audio Stream\n"
+		"\tchannels:\t%d\n"
+		"\tmilliseconds:\t%d\n"
+		"\tprecision:\t%d\n"
+		"\ttotal_size:\t%d\n"
+		"\ttotal_samples:\t%d\n"
+		"\tencoding:\t%s\n\n",
 		audio_stream.channels, audio_stream.milliseconds, audio_stream.precision, audio_stream.total_size, audio_stream.total_samples, config_encoding);
 }
 
 static void
-print_fft_config(fft_config_t config)
+print_fft_config(WINDOW *w, fft_config_t config)
 {
-	printw("FFT\n"
+	wprintw(w, "FFT\n"
 		"\tfs:\t\t%d\n"
 		"\tnbins:\t\t%d\n"
-		"\tnframes:\t\t%d\n"
-		"\tnsamples:\t\t%d\n"
-		"\ttotal_samples:\t\t%d\n"
+		"\tnframes:\t%d\n"
+		"\tnsamples:\t%d\n"
+		"\ttotal_samples:\t%d\n"
 		"\tfmin:\t\t%f\n"
-		"\tfmax:\t\t%f\n",
+		"\tfmax:\t\t%f\n\n",
 		config.fs, config.nbins, config.nframes, config.nsamples, config.total_samples,config.fmin,config.fmax);
+}
+
+static void
+print_draw_config(WINDOW *w,draw_config_t config)
+{
+	wprintw(w,"DRAW_CONFIG\n"
+		"\trows:\t\t%d\n"
+		"\tcols:\t\t%d\n"
+		"\tmax_h:\t\t%d\n"
+		"\tmax_w:\t\t%d\n"
+		"\ty_padding:\t%d\n"
+		"\tx_padding:\t%d\n"
+		"\tnbars:\t\t%d\n"
+		"\tbar_width:\t%d\n"
+		"\tbar_space:\t%d\n"
+		"\tuse_boxes:\t%d\n"
+		"\tnboxes:\t\t%d\n"
+		"\tbox_space:\t%d\n"
+		"\tbox_height:\t%d\n"
+		"\tuse_color:\t%d\n"
+		"\tbar_color:\t%d\n"
+		"\tbar_color2:\t%d\n",
+		config.rows, config.cols, config.max_h, config.max_w, config.y_padding, config.x_padding, config.nbars, config.bar_width, config.bar_space, config.use_boxes, config.nboxes, config.box_space, config.box_height, config.use_color, config.bar_color, config.bar_color2);
 }
 
 /*
@@ -91,18 +113,36 @@ check_options(int keypress)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config)
+draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
-	int option;
+	int option, scroll_pos;
+	WINDOW *dpad;
+
+	scroll_pos = 0;
+	dpad = newpad(150, draw_config.cols);
+	scrollok(dpad, TRUE);
 
 	move(0, 0);
 	nodelay(stdscr, FALSE);
-	print_ctrl(ctrl);
-	print_stream(audio_stream);
-	print_fft_config(fft_config);
 	for (;;) {
+		wmove(dpad, 0, 0);
+		print_ctrl(dpad, ctrl);
+		print_stream(dpad, audio_stream);
+		print_fft_config(dpad, fft_config);
+		print_draw_config(dpad, draw_config);
+		wscrl(dpad, scroll_pos);
+		pnoutrefresh(dpad, 0, 0, 0, 0, draw_config.rows, draw_config.cols);
+		doupdate();
+
+		flushinp();
 		keypress = (char)getch();
+		if (keypress == 'j') {
+			scroll_pos++;
+		}
+		if (keypress == 'k') {
+			scroll_pos--;
+		}
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_INFO) {
 			return option;
