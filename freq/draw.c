@@ -22,8 +22,8 @@ print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
 	config_encoding = get_encoding_name(ctrl.config.encoding);
 
 	wprintw(w, "Audio Controller\n"
-	       "\tDevice:\t\t%s\n"
-	       "\tMode:\t\t%s\n"
+	       "\tdevice:\t\t%s\n"
+	       "\tmode:\t\t%s\n"
 	       "\tbuffer_size:\t%d\n"
 	       "\tsample_rate:\t%d\n"
 	       "\tprecision:\t%d\n"
@@ -59,8 +59,8 @@ print_fft_config(WINDOW *w, fft_config_t config)
 		"\tnframes:\t%d\n"
 		"\tnsamples:\t%d\n"
 		"\ttotal_samples:\t%d\n"
-		"\tfmin:\t\t%f\n"
-		"\tfmax:\t\t%f\n\n",
+		"\tfmin:\t\t%.2f\n"
+		"\tfmax:\t\t%.2f\n\n",
 		config.fs, config.nbins, config.nframes, config.nsamples, config.total_samples,config.fmin,config.fmax);
 }
 
@@ -106,6 +106,18 @@ check_options(int keypress)
 	}
 }
 
+static void
+handle_scroll(char keypress, int *scroll_pos)
+{
+	if (keypress == 'j') {
+		(*scroll_pos)++;
+	}
+	if (keypress == 'k') {
+		(*scroll_pos)--;
+	}
+}
+
+
 /*
  * Display information about the audio controlers + streams
  *
@@ -137,12 +149,7 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_confi
 
 		flushinp();
 		keypress = (char)getch();
-		if (keypress == 'j') {
-			scroll_pos++;
-		}
-		if (keypress == 'k') {
-			scroll_pos--;
-		}
+		handle_scroll(keypress, &scroll_pos);
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_INFO) {
 			return option;
