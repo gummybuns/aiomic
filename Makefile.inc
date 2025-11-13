@@ -2,8 +2,8 @@
 
 .include <bsd.own.mk>
 
-LIBAUDIO != cd ${.CURDIR}/../common && ${PRINTOBJDIR}
-CPPFLAGS+=-I${.CURDIR}/../common
+LIBAUDIO != cd ${.CURDIR} && ${PRINTOBJDIR}
+CPPFLAGS+=-I${.CURDIR}
 DPADD+=	${LIBAUDIO}/libaudio.a
 LDADD+=	-L${LIBAUDIO} -laudio
 
