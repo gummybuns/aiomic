@@ -136,7 +136,7 @@ main(int argc, char *argv[])
 			path = optarg;
 			break;
 		case 'e':
-			// TODO figure out encoding strings next
+			decode_encoding(optarg, &(audio_config.encoding));
 			break;
 		case 'f':
 			decode_uint(optarg, &fft_samples);

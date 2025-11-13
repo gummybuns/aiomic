@@ -32,6 +32,7 @@
 __RCSID("$NetBSD: decode.c,v 1.1.8.1 2024/03/12 12:47:40 martin Exp $");
 #endif
 
+#include <sys/audioio.h>
 #include <sys/types.h>
 #include <sys/time.h>
 
@@ -93,5 +94,25 @@ decode_color(const char *arg, short *c)
 		*c = COLOR_WHITE;
 	} else {
 		errx(1, "%s is not a valid color", arg);
+	}
+}
+
+void
+decode_encoding(const char *arg, unsigned *u)
+{
+	if (strcasecmp(arg, "slinear") == 0) {
+		*u = AUDIO_ENCODING_SLINEAR;
+	} else if (strcasecmp(arg, "ulinear") == 0) {
+		*u = AUDIO_ENCODING_ULINEAR;
+	} else if (strcasecmp(arg, "slinear_le") == 0) {
+		*u = AUDIO_ENCODING_SLINEAR_LE;
+	} else if (strcasecmp(arg, "slinear_be") == 0) {
+		*u = AUDIO_ENCODING_SLINEAR_BE;
+	} else if (strcasecmp(arg, "ulinear_le") == 0) {
+		*u = AUDIO_ENCODING_ULINEAR_LE;
+	} else if (strcasecmp(arg, "ulinear_be") == 0) {
+		*u = AUDIO_ENCODING_ULINEAR_BE;
+	} else {
+		errx(1, "%s is not a valid encoding", arg);
 	}
 }
