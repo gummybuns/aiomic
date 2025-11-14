@@ -1,12 +1,10 @@
-# AIOMIC
+# audiov
 
-`aiomic` is a curses frontend to test NetBSD audio recording devices.
+`audiov` is a curses frontend to test NetBSD audio recording devices.
 
-It continually captures input from the device and measures the Root Mean Square
-of the collected samples.
+https://github.com/user-attachments/assets/15d80738-8a29-4bfa-a1af-083a6df0d693
 
-`aiomic` uses the existing configuration of the device and displays the RMS as
-a percentage of the maximum value based on the device's precision.
+
 
 ## Build
 
@@ -17,13 +15,5 @@ make
 ## Usage
 
 ```bash
-./aioic /dev/audio1
+./audiov
 ```
-
-### Navigation
-
-`aiomic` uses the following keys for navigation:
-
-- `R` - View the RMS of the recorded audio
-- `I` - View the configuration details of the device
-- `Q` - Exit the application
