@@ -285,5 +285,5 @@ main(int argc, char *argv[])
 	return 0;
 handle_error:
 	endwin();
-	errc(EXIT_FAILURE, res, get_error_msg(res));
+	errx(1, get_error_msg(res));
 }
