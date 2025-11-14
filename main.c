@@ -261,10 +261,8 @@ main(int argc, char *argv[])
 		}
 	}
 
-	option = DRAW_INFO;
+	option = DRAW_FREQ;
 	for (;;) {
-		draw_options();
-
 		if (option >= E_UNHANDLED) {
 			res = option;
 			goto handle_error;

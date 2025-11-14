@@ -97,10 +97,8 @@ check_options(int keypress)
 		return DRAW_INFO;
 	} else if (keypress == 'Q') {
 		return DRAW_EXIT;
-	} else if (keypress == 'F') {
+	} else if (keypress == 'V') {
 		return DRAW_FREQ;
-	} else if (keypress == 'D') {
-		return DRAW_DEBUG;
 	} else {
 		return 0;
 	}
@@ -361,17 +359,4 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			return option;
 		}
 	}
-}
-
-/*
- * Renders the nav options at the bottom of the screen for the user to see
- */
-void
-draw_options(void)
-{
-	int row;
-	row = getmaxy(stdscr);
-	mvprintw(row - 2, 1, "OPTIONS: ");
-	printw("F: FREQ / I: INFO / Q: QUIT");
-	refresh();
 }
