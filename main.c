@@ -40,6 +40,7 @@
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
+#include "colors.h"
 #include "decode.h"
 #include "draw.h"
 #include "draw_config.h"
@@ -103,7 +104,7 @@ static struct option longopts[] = {
 	{ "fft-fmin",		required_argument,	NULL,	'm' },
 	{ "precision",		required_argument,	NULL,	'p' },
 	{ "sample-rate",	required_argument,	NULL,	's' },
-	{ "color",			required_argument,	NULL,	'C' },
+	{ "color",		required_argument,	NULL,	'C' },
 	{ "color-end",		required_argument,	NULL,	'E' },
 	{ "box-height",		required_argument,	NULL,	'H' },
 	{ "milliseconds",	required_argument,	NULL,	'M' },
@@ -120,17 +121,18 @@ main(int argc, char *argv[])
 	int c, ch, option, res;
 	u_int fft_samples, fft_fmin, ms;
 	const char *path;
-	short r1, g1, b1;
-	short r2, g2, b2;
-	short r_interp, g_interp, b_interp;
 	float t;
 	audio_ctrl_t rctrl;
 	audio_config_t audio_config;
 	audio_stream_t rstream;
+	color_t cstart, cend;
+	color_pair_t *cp;
+	color_pair_t **color_pairs;
 	fft_config_t fft_config;
 	draw_config_t draw_config;
 
 	setprogname(argv[0]);
+	color_pairs = NULL;
 
 	path =                      DEFAULT_PATH;
 
@@ -273,19 +275,10 @@ main(int argc, char *argv[])
 				goto handle_error;
 			}
 
-			color_content(draw_config.bar_color, &r1, &g1, &b1);
-			color_content(draw_config.bar_color2, &r2, &g2, &b2);
-			for (c = 0; c < draw_config.ncolors; c++) {
-				t = (float)c / (float)(draw_config.ncolors - 1);
-				r_interp = (int)((1-t) * r1 + t * r2);
-				g_interp = (int)((1-t) * g1 + t * g2);
-				b_interp = (int)((1-t) * b1 + t * b2);
-				if((res = init_color(c, r_interp, g_interp, b_interp)) != 0) {
-					res = E_INIT_COLOR;
-					goto handle_error;
-				}
-				init_pair(c, c, -1);
-			}
+			extract_color(draw_config.bar_color, &cstart);
+			extract_color(draw_config.bar_color2, &cend);
+			color_pairs = malloc(sizeof(color_pair_t *) * draw_config.ncolors);
+			init_color_pairs(color_pairs, draw_config.ncolors, cstart, cend);
 		}
 	}
 
@@ -308,8 +301,16 @@ main(int argc, char *argv[])
 	}
 
 	endwin();
+	printf("IM ABOVE THE IF\n");
+	if (color_pairs != NULL) {
+		printf("IM CALLING CLEANUP\n");
+		cleanup_colors(color_pairs, draw_config.ncolors);
+	}
 	return 0;
 handle_error:
 	endwin();
+	if (color_pairs != NULL) {
+		cleanup_colors(color_pairs, draw_config.ncolors);
+	}
 	errx(1, get_error_msg(res));
 }
