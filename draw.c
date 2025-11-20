@@ -334,7 +334,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 
 		/* listen for input */
 		flushinp();
-		keypress = (char)wgetch(fwin);
+		keypress = (char)getch();
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_FREQ && option != DRAW_DEBUG) {
 			// TODO free bar windows
