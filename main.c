@@ -301,9 +301,7 @@ main(int argc, char *argv[])
 	}
 
 	endwin();
-	printf("IM ABOVE THE IF\n");
 	if (color_pairs != NULL) {
-		printf("IM CALLING CLEANUP\n");
 		cleanup_colors(color_pairs, draw_config.ncolors);
 	}
 	return 0;

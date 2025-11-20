@@ -138,7 +138,7 @@ handle_scroll(char keypress, int *scroll_pos)
 	if (keypress == 'j') {
 		(*scroll_pos)++;
 	}
-	if (keypress == 'k') {
+	if (keypress == 'k' && *scroll_pos > 0) {
 		(*scroll_pos)--;
 	}
 }
@@ -170,14 +170,14 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_confi
 		print_fft_config(dpad, fft_config);
 		print_draw_config(dpad, draw_config);
 		wscrl(dpad, scroll_pos);
-		pnoutrefresh(dpad, 0, 0, 0, 0, draw_config.rows, draw_config.cols);
-		doupdate();
+		prefresh(dpad, 0, 0, 0, 0, draw_config.rows, draw_config.cols);
 
 		flushinp();
-		keypress = (char)getch();
+		keypress = (char)wgetch(dpad);
 		handle_scroll(keypress, &scroll_pos);
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_INFO) {
+			delwin(dpad);
 			return option;
 		}
 	}
@@ -232,10 +232,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	WINDOW *dpad, *fwin;
 	WINDOW *bwin[draw_config.nbars][draw_config.nboxes];
 
-	debug_on = 0;
-	dpad = NULL;
-	scroll_pos = 0;
-
 	nodelay(stdscr, TRUE);
 
 	fwin = newwin(draw_config.rows, draw_config.cols, 0, 0);
@@ -252,11 +248,11 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		reset_bars(bars, draw_config, fft_config);
 
 		if ((res = stream(ctrl, audio_stream, data)) != 0) {
-			return res;
+			goto finish;
 		}
 
 		if ((res = to_normalized_pcm(audio_stream, data, pcm)) != 0) {
-			return res;
+			goto finish;
 		}
 
 		fft(fft_config, bins, pcm);
@@ -303,7 +299,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			// need at least a height of 2 to draw a box
 			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
 
-			// TODO - i need to delwin and clean up everything each iteration
 			k = 0;
 			if (draw_config.nboxes == 1) {
 				delwin(bwin[i][0]);
@@ -320,7 +315,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			}
 
 			if (draw_config.use_color) {
-				//wbkgd(bars[i].win, COLOR_PAIR(1) | A_REVERSE);
 				do {
 					// TODO i dont know why i need pidx + 1 but i do
 					int pidx = draw_config.ncolors > 1 ? k + 1 : 1;
@@ -333,58 +327,27 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 					k--;
 				} while (k >= 0);
 			}
-			//wnoutrefresh(bars[i].shadow);
-			//wnoutrefresh(bars[i].win);
 			j++;
 		}
-		//wrefresh(fwin);
 		wnoutrefresh(fwin);
-
-		/* i have to create a data structure to define the debug
-		 * window config. its getting too much at this point...
-		 */
-		if (debug_on == 1) {
-			i = 0;
-			avg = bars[i].magnitude / (float)bars[i].nbins;
-			wprintw(dpad, " Bar %d (%.2f - %.2f):\n", i, bars[i].fmin, bars[i].fmax);
-			for (j = 0; j < fft_config.nbins; j++) {
-				if (bins[j].frequency < fft_config.fmin) continue;
-				while(bins[j].frequency > bars[i].fmax) {
-					i++;
-					avg = bars[i].magnitude / (float)bars[i].nbins;
-					wprintw(dpad, " Bar %d (%.2f - %.2f):\n", i, bars[i].fmin, bars[i].fmax);
-				}
-				wprintw(dpad,"\tBin %d (%.2f): %.2f\n", j, bins[j].frequency, bins[j].magnitude);
-			}
-			wscrl(dpad, scroll_pos);
-			wmove(dpad, 10, 100);
-			box(dpad, 0, 0);
-			//wnoutrefresh(dpad);
-			pnoutrefresh(dpad, 0, 0, 0, draw_config.cols / 2 -1, 10, draw_config.cols);
-		}
 		doupdate();
 
 		/* listen for input */
 		flushinp();
-		keypress = (char)getch();
-		if (keypress == 'j') {
-			scroll_pos++;
-		}
-		if (keypress == 'k') {
-			scroll_pos--;
-		}
-		if (keypress == 'D' && debug_on == 0) {
-			debug_on = 1;
-			dpad = newpad(draw_config.nbars + fft_config.nbins - 1, draw_config.cols / 2);
-			scrollok(dpad, TRUE);
-		} else if (keypress == 'D' && debug_on == 1) {
-			debug_on = 0;
-			delwin(dpad);
-		}
+		keypress = (char)wgetch(fwin);
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_FREQ && option != DRAW_DEBUG) {
 			// TODO free bar windows
-			return option;
+			res = option;
+			goto finish;
 		}
 	}
+finish:
+	for (i = 0; i < draw_config.nbars; i++) {
+		for (j = 0; j < draw_config.nboxes; j++) {
+			delwin(bwin[i][j]);
+		}
+	}
+	delwin(fwin);
+	return res;
 }
