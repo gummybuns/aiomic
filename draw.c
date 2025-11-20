@@ -225,12 +225,20 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	int active_bars, draw_start, option, res, scroll_pos, draw_height, k;
 	u_int i, j;
 	float avg, freq, scaled_magnitude;
-	u_char data[audio_stream.total_size];
-	float pcm[audio_stream.total_samples];
-	bar_t bars[draw_config.nbars];
-	bin_t bins[fft_config.nbins];
-	WINDOW *dpad, *fwin;
-	WINDOW *bwin[draw_config.nbars][draw_config.nboxes];
+	u_char *data;
+	float *pcm;
+	bar_t *bars;
+	bin_t *bins;
+	WINDOW *dpad, *fwin, ***bwin;
+
+	data = malloc(sizeof(u_char) * audio_stream.total_size);
+	pcm = malloc(sizeof(float) * audio_stream.total_samples);
+	bars = malloc(sizeof(bar_t) * draw_config.nbars);
+	bins = malloc(sizeof(bin_t) * fft_config.nbins);
+	bwin = malloc(sizeof(WINDOW **) * draw_config.nbars);
+	for (i = 0; i < draw_config.nbars; i++) {
+		bwin[i] = malloc(sizeof(WINDOW *) * draw_config.nboxes);
+	}
 
 	nodelay(stdscr, TRUE);
 
@@ -337,7 +345,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		keypress = (char)getch();
 		option = check_options(keypress);
 		if (option != 0 && option != DRAW_FREQ && option != DRAW_DEBUG) {
-			// TODO free bar windows
 			res = option;
 			goto finish;
 		}
@@ -348,6 +355,14 @@ finish:
 			delwin(bwin[i][j]);
 		}
 	}
+	for (i = 0; i < draw_config.nbars; i++) {
+		free(bwin[i]);
+	}
+	free(bwin);
+	free(bins);
+	free(bars);
+	free(pcm);
+	free(data);
 	delwin(fwin);
 	return res;
 }
