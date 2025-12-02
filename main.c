@@ -118,7 +118,7 @@ static struct option longopts[] = {
 int
 main(int argc, char *argv[])
 {
-	int c, ch, option, res;
+	int c, ch, i, option, res;
 	u_int fft_samples, fft_fmin, ms;
 	const char *path;
 	float t;
@@ -278,6 +278,9 @@ main(int argc, char *argv[])
 			extract_color(draw_config.bar_color, &cstart);
 			extract_color(draw_config.bar_color2, &cend);
 			color_pairs = malloc(sizeof(color_pair_t *) * draw_config.ncolors);
+			for (i = 0; i < draw_config.ncolors; i++) {
+				color_pairs[i] = malloc(sizeof(color_pair_t));
+			}
 			init_color_pairs(color_pairs, draw_config.ncolors, cstart, cend);
 		}
 	}
