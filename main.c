@@ -72,6 +72,7 @@ build_draw_config(draw_config_t *config)
 	config->y_padding = y_padding;
 	config->max_h = rows - y_padding * 2;
 	config->max_w = cols - x_padding * 2;
+	config->coffset = 0;
 
 	if (IS_UNSET(config->bar_width)) {
 		config->bar_width = DEFAULT_BAR_WIDTH;
@@ -89,7 +90,8 @@ build_draw_config(draw_config_t *config)
 	}
 
 	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
-		config->ncolors = (u_int)fminf((float)config->nboxes, COLOR_PAIRS - 1);
+		config->ncolors = (u_int)fminf((float)config->nboxes, COLORS - 1);
+		config->coffset = (COLORS - 1) - config->ncolors;
 	}
 
 	return 0;
@@ -126,13 +128,10 @@ main(int argc, char *argv[])
 	audio_config_t audio_config;
 	audio_stream_t rstream;
 	color_t cstart, cend;
-	color_pair_t *cp;
-	color_pair_t **color_pairs;
 	fft_config_t fft_config;
 	draw_config_t draw_config;
 
 	setprogname(argv[0]);
-	color_pairs = NULL;
 
 	path =                      DEFAULT_PATH;
 
@@ -277,11 +276,7 @@ main(int argc, char *argv[])
 
 			extract_color(draw_config.bar_color, &cstart);
 			extract_color(draw_config.bar_color2, &cend);
-			color_pairs = malloc(sizeof(color_pair_t *) * draw_config.ncolors);
-			for (i = 0; i < draw_config.ncolors; i++) {
-				color_pairs[i] = malloc(sizeof(color_pair_t));
-			}
-			init_color_pairs(color_pairs, draw_config.ncolors, cstart, cend);
+			init_color_pairs(draw_config.coffset, draw_config.ncolors, cstart, cend);
 		}
 	}
 
@@ -304,14 +299,8 @@ main(int argc, char *argv[])
 	}
 
 	endwin();
-	if (color_pairs != NULL) {
-		cleanup_colors(color_pairs, draw_config.ncolors);
-	}
 	return 0;
 handle_error:
 	endwin();
-	if (color_pairs != NULL) {
-		cleanup_colors(color_pairs, draw_config.ncolors);
-	}
 	errx(1, get_error_msg(res));
 }

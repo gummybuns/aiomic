@@ -324,7 +324,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 
 			if (draw_config.use_color) {
 				do {
-					// TODO i dont know why i need pidx + 1 but i do
+					/* k + 1 because we dont override the default pair */
 					int pidx = draw_config.ncolors > 1 ? k + 1 : 1;
 					wbkgd(bwin[i][k], COLOR_PAIR(pidx) | A_REVERSE);
 					k--;

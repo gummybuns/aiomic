@@ -35,13 +35,7 @@ typedef struct color_t {
 	short b;
 } color_t;
 
-typedef struct color_pair_t {
-	color_t orig;
-	color_t cur;
-} color_pair_t;
-
-int init_color_pairs(color_pair_t **color_pairs, int n, color_t s, color_t e);
-int cleanup_colors(color_pair_t **color_pairs, int n);
+int init_color_pairs(int cstart, int n, color_t s, color_t e);
 int extract_color(int i, color_t *color);
 #endif
 
