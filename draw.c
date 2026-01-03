@@ -223,7 +223,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 {
 	char keypress, debug_on;
 	int active_bars, draw_start, option, res, scroll_pos, draw_height, k;
-	u_int i, j;
+	u_int i, j, c;
 	float avg, freq, scaled_magnitude;
 	u_char *data;
 	float *pcm;
@@ -251,6 +251,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		}
 	}
 
+	c = 0;
 	for (;;) {
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
@@ -258,6 +259,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		if ((res = stream(ctrl, audio_stream, data)) != 0) {
 			goto finish;
 		}
+		c++;
 
 		if ((res = to_normalized_pcm(audio_stream, data, pcm)) != 0) {
 			goto finish;
@@ -296,6 +298,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		j = 0;
 
 		werase(fwin);
+		mvwprintw(fwin, 0, 0, "count=%d\n", c);
 		for (i = 0; i < draw_config.nbars; i++) {
 			if (bars[i].nbins <= 0)
 				continue;

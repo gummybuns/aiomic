@@ -109,8 +109,9 @@ stream(audio_ctrl_t ctrl, audio_stream_t stream, u_char *data)
 	u_int i, ns;
 	ssize_t io_count;
 	io_count = 0;
+	i = 0;
 
-	for (i = 0; i < stream.total_size; i++) {
+	while (i < stream.total_size) {
 		/* the size of the buffer or whats left */
 		ns = (u_int)fminf((float)ctrl.config.buffer_size,
 		    (float)(stream.total_size - i));

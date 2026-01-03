@@ -231,9 +231,11 @@ main(int argc, char *argv[])
 		goto handle_error;
 	}
 
+/*
 	if ((res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
 		goto handle_error;
 	}
+*/
 
 	if ((res = build_stream_from_ctrl(rctrl, ms, &rstream)) != 0) {
 		goto handle_error;
@@ -280,7 +282,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	option = DRAW_FREQ;
+	option = DRAW_INFO;
 	for (;;) {
 		if (option >= E_UNHANDLED) {
 			res = option;

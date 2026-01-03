@@ -30,6 +30,7 @@
 #include <sys/ioctl.h>
 
 #include <fcntl.h>
+#include <stdio.h>
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
@@ -108,43 +109,84 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
 	int fd;
 	audio_info_t info, format;
 
-	fd = open(path, O_RDONLY);
-	if (fd == -1) {
-		return E_CTRL_FILE_OPEN;
-	}
 
-	ctrl->path = path;
-	ctrl->fd = fd;
-	ctrl->mode = mode;
+	if (mode == AUMODE_RECORD) {
+		fd = open(path, O_RDONLY);
+		if (fd == -1) {
+			return E_CTRL_FILE_OPEN;
+		}
+		ctrl->path = path;
+		ctrl->fd = fd;
+		ctrl->mode = mode;
 
-	/* initialize defaults */
-	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
-		return E_CTRL_GETINFO;
-	}
-	if (ioctl(ctrl->fd, AUDIO_GETFORMAT, &format) == -1) {
-		return E_CTRL_GETFORMAT;
-	}
+		ctrl->config.precision = 16;
+		ctrl->config.encoding = AUDIO_ENCODING_SLINEAR_LE;
+		ctrl->config.buffer_size = 376320;
+		ctrl->config.sample_rate = 44100;
+		ctrl->config.channels = 2;
 
-	/* set device to use hardware's current settings */
-	info.record.buffer_size = format.record.buffer_size;
-	info.record.sample_rate = format.record.sample_rate;
-	info.record.precision = format.record.precision;
-	info.record.channels = format.record.channels;
-	info.record.encoding = format.record.encoding;
+		/*
+		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+			return E_CTRL_GETINFO;
+		}
+		if (ioctl(ctrl->fd, AUDIO_GETFORMAT, &format) == -1) {
+			return E_CTRL_GETFORMAT;
+		}
 
-	if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
-		return E_CTRL_SETINFO;
-	}
+		info.record.buffer_size = format.record.buffer_size;
+		info.record.sample_rate = format.record.sample_rate;
+		info.record.precision = format.record.precision;
+		info.record.channels = format.record.channels;
+		info.record.encoding = format.record.encoding;
 
-	/* update ctrl to reflect changes */
-	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
-		return E_CTRL_GETINFO;
+		if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
+			return E_CTRL_SETINFO;
+		}
+
+		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+			return E_CTRL_GETINFO;
+		}
+		ctrl->config.precision = info.record.precision;
+		ctrl->config.encoding = info.record.encoding;
+		ctrl->config.buffer_size = info.record.buffer_size;
+		ctrl->config.sample_rate = info.record.sample_rate;
+		ctrl->config.channels = info.record.channels;
+		*/
+	} else {
+		fd = open(path, O_WRONLY);
+		if (fd == -1) {
+			return E_CTRL_FILE_OPEN;
+		}
+		ctrl->path = path;
+		ctrl->fd = fd;
+		ctrl->mode = mode;
+
+		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+			return E_CTRL_GETINFO;
+		}
+		if (ioctl(ctrl->fd, AUDIO_GETFORMAT, &format) == -1) {
+			return E_CTRL_GETFORMAT;
+		}
+
+		info.record.buffer_size = format.record.buffer_size;
+		info.record.sample_rate = format.record.sample_rate;
+		info.record.precision = format.record.precision;
+		info.record.channels = format.record.channels;
+		info.record.encoding = format.record.encoding;
+
+		if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
+			return E_CTRL_SETINFO;
+		}
+
+		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+			return E_CTRL_GETINFO;
+		}
+		ctrl->config.precision = info.record.precision;
+		ctrl->config.encoding = info.record.encoding;
+		ctrl->config.buffer_size = info.record.buffer_size;
+		ctrl->config.sample_rate = info.record.sample_rate;
+		ctrl->config.channels = info.record.channels;
 	}
-	ctrl->config.precision = info.record.precision;
-	ctrl->config.encoding = info.record.encoding;
-	ctrl->config.buffer_size = info.record.buffer_size;
-	ctrl->config.sample_rate = info.record.sample_rate;
-	ctrl->config.channels = info.record.channels;
 
 	return 0;
 }
