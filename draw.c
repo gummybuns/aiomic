@@ -29,6 +29,7 @@
 #include <curses.h>
 #include <math.h>
 #include <stdlib.h>
+#include <err.h>
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
@@ -154,9 +155,18 @@ int
 draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
-	int option, scroll_pos;
+	int option, scroll_pos, res;
 	WINDOW *dpad;
+	audio_ctrl_t pctrl;
+	audio_stream_t pstream;
 
+
+	if ((res = build_audio_ctrl(&pctrl, "/dev/audio1", AUMODE_PLAY)) != 0) {
+		return -1;
+	}
+	if ((res = build_stream_from_ctrl(pctrl, 150, &pstream)) != 0) {
+		return -1;
+	}
 	scroll_pos = 0;
 	dpad = newpad(150, draw_config.cols);
 	scrollok(dpad, TRUE);
@@ -167,6 +177,8 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_confi
 		wmove(dpad, 0, 0);
 		print_ctrl(dpad, ctrl);
 		print_stream(dpad, audio_stream);
+		print_ctrl(dpad, pctrl);
+		print_stream(dpad, pstream);
 		print_fft_config(dpad, fft_config);
 		print_draw_config(dpad, draw_config);
 		wscrl(dpad, scroll_pos);
@@ -230,6 +242,8 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	bar_t *bars;
 	bin_t *bins;
 	WINDOW *dpad, *fwin, ***bwin;
+	audio_ctrl_t pctrl;
+	audio_stream_t pstream;
 
 	data = malloc(sizeof(u_char) * audio_stream.total_size);
 	pcm = malloc(sizeof(float) * audio_stream.total_samples);
@@ -244,6 +258,13 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 
 	fwin = newwin(draw_config.rows, draw_config.cols, 0, 0);
 	wrefresh(fwin);
+
+	if ((res = build_audio_ctrl(&pctrl, "/dev/audio1", AUMODE_PLAY)) != 0) {
+		return -1;
+	}
+	if ((res = build_stream_from_ctrl(pctrl, 150, &pstream)) != 0) {
+		return -1;
+	}
 
 	for (i = 0; i < draw_config.nbars; i++) {
 		for (j = 0; j < draw_config.nboxes; j++) {
@@ -299,6 +320,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 
 		werase(fwin);
 		mvwprintw(fwin, 0, 0, "count=%d\n", c);
+		/*
 		for (i = 0; i < draw_config.nbars; i++) {
 			if (bars[i].nbins <= 0)
 				continue;
@@ -310,24 +332,27 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			// need at least a height of 2 to draw a box
 			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
 
+			draw_height = 0;
 			k = 0;
-			if (draw_config.nboxes == 1) {
-				delwin(bwin[i][0]);
-				bwin[i][0] = subwin(fwin,(int) scaled_magnitude, (int)draw_config.bar_width, draw_config.max_h - (int)scaled_magnitude, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
-			} else {
-				draw_height = 0;
-				while (draw_height < (int) ceilf(scaled_magnitude)) {
-					delwin(bwin[i][k]);
-					bwin[i][k] = subwin(fwin, (int)draw_config.box_height, (int)draw_config.bar_width, draw_config.max_h - (int)k*draw_config.box_height - (int)k*draw_config.box_space, (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space));
-					draw_height += (draw_config.box_height + draw_config.box_space);
-					k++;
-				}
-				k--;
+			int rows = draw_config.use_boxes ? draw_config.box_height : (int) scaled_magnitude;
+			int offset = draw_config.use_boxes ? 0 : 1;
+			int cols = draw_config.bar_width;
+			int startx = (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space);
+			while (draw_height < (int)ceilf(scaled_magnitude)) {
+				// TODO i have no idea why i need to do k+1 when use_boxes is false
+				int starty = draw_config.max_h - (int)(k+offset)*rows - (int)k*draw_config.box_space;
+				wmove(fwin, 0, 0);
+				wprintw(fwin, "bwin[%d][%d]\n",i, k);
+				wrefresh(fwin);
+				delwin(bwin[i][k]);
+                bwin[i][k] = subwin(fwin, rows, cols, starty, startx);
+				draw_height += rows + draw_config.box_space;
+				k++;
 			}
+			k--;
 
 			if (draw_config.use_color) {
 				do {
-					/* k + 1 because we dont override the default pair */
 					int pidx = draw_config.ncolors > 1 ? k + 1 : 1;
 					wbkgd(bwin[i][k], COLOR_PAIR(pidx) | A_REVERSE);
 					k--;
@@ -340,8 +365,13 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			}
 			j++;
 		}
+		*/
 		wnoutrefresh(fwin);
 		doupdate();
+
+		if ((res = stream(pctrl, pstream, data)) != 0) {
+			goto finish;
+		}
 
 		/* listen for input */
 		flushinp();

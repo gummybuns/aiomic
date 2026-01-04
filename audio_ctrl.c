@@ -168,11 +168,18 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
 			return E_CTRL_GETFORMAT;
 		}
 
-		info.record.buffer_size = format.record.buffer_size;
-		info.record.sample_rate = format.record.sample_rate;
-		info.record.precision = format.record.precision;
-		info.record.channels = format.record.channels;
-		info.record.encoding = format.record.encoding;
+		info.play.buffer_size = format.record.buffer_size;
+		info.play.sample_rate = format.record.sample_rate;
+		info.play.precision = format.record.precision;
+		info.play.channels = format.record.channels;
+		info.play.encoding = format.record.encoding;
+		//info.play.channels = 1;
+
+		info.play.buffer_size = 376320;
+		info.play.sample_rate = 44100;
+		info.play.precision = 16;
+		info.play.channels = 2;
+		info.play.encoding = AUDIO_ENCODING_SLINEAR_LE;
 
 		if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
 			return E_CTRL_SETINFO;
@@ -181,11 +188,11 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
 		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
 			return E_CTRL_GETINFO;
 		}
-		ctrl->config.precision = info.record.precision;
-		ctrl->config.encoding = info.record.encoding;
-		ctrl->config.buffer_size = info.record.buffer_size;
-		ctrl->config.sample_rate = info.record.sample_rate;
-		ctrl->config.channels = info.record.channels;
+		ctrl->config.precision = info.play.precision;
+		ctrl->config.encoding = info.play.encoding;
+		ctrl->config.buffer_size = info.play.buffer_size;
+		ctrl->config.sample_rate = info.play.sample_rate;
+		ctrl->config.channels = info.play.channels;
 	}
 
 	return 0;

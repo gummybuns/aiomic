@@ -36,7 +36,7 @@ validate_draw_config(draw_config_t *config)
 {
 	u_int computed;
 
-	if (config->box_height <= 0) {
+	if (config->use_boxes && config->box_height <= 0) {
 		return E_DRW_CONFIG_BOX_HEIGHT_ZERO;
 	}
 
@@ -44,7 +44,7 @@ validate_draw_config(draw_config_t *config)
 		return E_DRW_CONFIG_NBARS_ZERO;
 	}
 
-	if (config->nboxes <= 0) {
+	if (config->use_boxes && config->nboxes <= 0) {
 		return E_DRW_CONFIG_NBOXES_ZERO;
 	}
 

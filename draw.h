@@ -51,6 +51,12 @@ typedef struct bar_t {
 	u_int nbins; /* number of bins represented in the bar */
 	float
 	    magnitude; /* sum of all amplitudes of all bins within frequency */
+	int height;
+	int width;
+	int startx;
+	int endx;
+	int starty;
+	int endy;
 } bar_t;
 
 int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config, draw_config_t draw_config);

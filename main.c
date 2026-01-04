@@ -85,8 +85,8 @@ build_draw_config(draw_config_t *config)
 	if (config->use_boxes) {
 		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
 	} else {
-		config->nboxes = 1;
-		config->box_height = config->max_h / (config->nboxes + config->box_space);
+		config->nboxes = UNSET;
+		config->box_height = UNSET;
 	}
 
 	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
