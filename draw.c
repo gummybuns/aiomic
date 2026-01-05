@@ -320,7 +320,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 
 		werase(fwin);
 		mvwprintw(fwin, 0, 0, "count=%d\n", c);
-		/*
+
 		for (i = 0; i < draw_config.nbars; i++) {
 			if (bars[i].nbins <= 0)
 				continue;
@@ -341,9 +341,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			while (draw_height < (int)ceilf(scaled_magnitude)) {
 				// TODO i have no idea why i need to do k+1 when use_boxes is false
 				int starty = draw_config.max_h - (int)(k+offset)*rows - (int)k*draw_config.box_space;
-				wmove(fwin, 0, 0);
-				wprintw(fwin, "bwin[%d][%d]\n",i, k);
-				wrefresh(fwin);
 				delwin(bwin[i][k]);
                 bwin[i][k] = subwin(fwin, rows, cols, starty, startx);
 				draw_height += rows + draw_config.box_space;
@@ -365,7 +362,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			}
 			j++;
 		}
-		*/
+
 		wnoutrefresh(fwin);
 		doupdate();
 

@@ -85,7 +85,7 @@ build_draw_config(draw_config_t *config)
 	if (config->use_boxes) {
 		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
 	} else {
-		config->nboxes = UNSET;
+		config->nboxes = 1; /* always need at least one box */
 		config->box_height = UNSET;
 	}
 
