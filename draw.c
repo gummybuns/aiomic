@@ -223,6 +223,44 @@ reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
 }
 
 /*
+ * Calculate the starting x position of the first bar
+ */
+inline int
+calculate_draw_start(draw_config_t draw_config, bar_t *bars)
+{
+	int active_bars, i;
+
+	active_bars = 0;
+	for (i = 0; i < draw_config.nbars; i++) {
+		if (bars[i].nbins <= 0)
+			continue;
+		active_bars++;
+	}
+
+	return (int)draw_config.x_padding + (int)(draw_config.max_w - active_bars * (int)draw_config.bar_width - active_bars * (int)draw_config.bar_space) / 2;
+}
+
+/* Calculate the draw coordinates of the bar */
+inline coords_t
+calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_start, int maxy)
+{
+			int cols, offset, rows, startx, starty;
+
+			rows = cfg.use_boxes ? cfg.box_height : maxy;
+			cols = cfg.bar_width;
+			startx = (int)(bi * cfg.bar_width) + draw_start + (int)(bi * cfg.bar_space);
+
+			/* TODO i dont really know why i need this offset when in bar mode */
+			offset = cfg.use_boxes ? 0 : 1;
+			starty = cfg.max_h - (xi+offset)*rows - xi*cfg.box_space;
+
+			coords->rows = rows;
+			coords->cols = cols;
+			coords->startx = startx;
+			coords->starty = starty;
+}
+
+/*
  * Displays a screen to record audio and display the data in the frequency
  * spectrum.
  *
@@ -244,6 +282,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	WINDOW *dpad, *fwin, ***bwin;
 	audio_ctrl_t pctrl;
 	audio_stream_t pstream;
+	coords_t coords;
 
 	data = malloc(sizeof(u_char) * audio_stream.total_size);
 	pcm = malloc(sizeof(float) * audio_stream.total_samples);
@@ -294,28 +333,14 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			for (j = 0; j < draw_config.nbars; j++) {
 				if (freq >= bars[j].fmin &&
 				    freq < bars[j].fmax) {
-					bars[j].magnitude += bins[i].magnitude;
 					bars[j].nbins += 1;
+					bars[j].magnitude += (bins[i].magnitude - bars[j].magnitude) / bars[j].nbins;
 					break;
 				}
 			}
 		}
 
-		active_bars = 0;
-		for (i = 0; i < draw_config.nbars; i++) {
-			/*
-			 * Based on the number of bins / number of bars it is
-			 * possible that some bars just have no data. We are
-			 * going to skip drawing these so there are no gaps
-			 * in the bar graph
-			 */
-			if (bars[i].nbins <= 0)
-				continue;
-			active_bars++;
-		}
-
-		draw_start = (int)draw_config.x_padding +
-			     (int)(draw_config.max_w - active_bars * (int)draw_config.bar_width - active_bars * (int)draw_config.bar_space) / 2;
+		draw_start = calculate_draw_start(draw_config, bars);
 		j = 0;
 
 		werase(fwin);
@@ -325,47 +350,43 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 			if (bars[i].nbins <= 0)
 				continue;
 
-			avg = bars[i].magnitude / (float)bars[i].nbins;
-			avg = ceilf(avg * FREQ_SCALE_FACTOR);
-			scaled_magnitude = fminf(avg,
-			    (float)(draw_config.max_h - draw_config.y_padding));
-			// need at least a height of 2 to draw a box
-			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
-
 			draw_height = 0;
 			k = 0;
-			int rows = draw_config.use_boxes ? draw_config.box_height : (int) scaled_magnitude;
-			int offset = draw_config.use_boxes ? 0 : 1;
-			int cols = draw_config.bar_width;
-			int startx = (int)(j * draw_config.bar_width) + draw_start + (int)(j * draw_config.bar_space);
+
+			scaled_magnitude = fminf(bars[i].magnitude,
+			    (float)(draw_config.max_h - draw_config.y_padding));
+			/* need at least a height of 2 to draw a box */
+			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
+
 			while (draw_height < (int)ceilf(scaled_magnitude)) {
 				// TODO i have no idea why i need to do k+1 when use_boxes is false
-				int starty = draw_config.max_h - (int)(k+offset)*rows - (int)k*draw_config.box_space;
+				calculate_coords(&coords, draw_config, j, k, draw_start, scaled_magnitude);
 				delwin(bwin[i][k]);
-                bwin[i][k] = subwin(fwin, rows, cols, starty, startx);
-				draw_height += rows + draw_config.box_space;
+                bwin[i][k] = subwin(fwin, coords.rows, coords.cols, coords.starty, coords.startx);
+				draw_height += coords.rows + draw_config.box_space;
 				k++;
 			}
 			k--;
 
-			if (draw_config.use_color) {
-				do {
+			do {
+				if (draw_config.use_color) {
 					int pidx = draw_config.ncolors > 1 ? k + 1 : 1;
 					wbkgd(bwin[i][k], COLOR_PAIR(pidx) | A_REVERSE);
-					k--;
-				} while (k >= 0);
-			} else {
-				do {
+				} else {
 					box(bwin[i][k], 0, 0);
-					k--;
-				} while (k >= 0);
-			}
+				}
+				k--;
+			} while (k >= 0);
+
 			j++;
 		}
 
 		wnoutrefresh(fwin);
 		doupdate();
 
+		// TODO - this is not the best at the moment. there is some "clickiness"
+		// during playback which becomes more noticeable as your milliseconds
+		// decreases.
 		if ((res = stream(pctrl, pstream, data)) != 0) {
 			goto finish;
 		}
