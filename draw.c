@@ -241,7 +241,7 @@ calculate_draw_start(draw_config_t draw_config, bar_t *bars)
 }
 
 /* Calculate the draw coordinates of the bar */
-inline coords_t
+inline void
 calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_start, int maxy)
 {
 			int cols, offset, rows, startx, starty;
@@ -273,6 +273,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 {
 	char keypress, debug_on;
 	int active_bars, draw_start, option, res, scroll_pos, draw_height, k;
+	int bari, boxi;
 	u_int i, j, c;
 	float avg, freq, scaled_magnitude;
 	u_char *data;
@@ -319,6 +320,14 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		if ((res = stream(ctrl, audio_stream, data)) != 0) {
 			goto finish;
 		}
+
+		// TODO - this is not the best at the moment. there is some "clickiness"
+		// during playback which becomes more noticeable as your milliseconds
+		// decreases.
+		if ((res = stream(pctrl, pstream, data)) != 0) {
+			goto finish;
+		}
+
 		c++;
 
 		if ((res = to_normalized_pcm(audio_stream, data, pcm)) != 0) {
@@ -346,50 +355,39 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		werase(fwin);
 		mvwprintw(fwin, 0, 0, "count=%d\n", c);
 
+		bari = 0;
 		for (i = 0; i < draw_config.nbars; i++) {
 			if (bars[i].nbins <= 0)
 				continue;
-
-			draw_height = 0;
-			k = 0;
 
 			scaled_magnitude = fminf(bars[i].magnitude,
 			    (float)(draw_config.max_h - draw_config.y_padding));
 			/* need at least a height of 2 to draw a box */
 			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
 
+			draw_height = 0;
+			boxi = 0;
 			while (draw_height < (int)ceilf(scaled_magnitude)) {
-				// TODO i have no idea why i need to do k+1 when use_boxes is false
-				calculate_coords(&coords, draw_config, j, k, draw_start, scaled_magnitude);
-				delwin(bwin[i][k]);
-                bwin[i][k] = subwin(fwin, coords.rows, coords.cols, coords.starty, coords.startx);
-				draw_height += coords.rows + draw_config.box_space;
-				k++;
-			}
-			k--;
+				calculate_coords(&coords, draw_config, bari, boxi, draw_start, scaled_magnitude);
+				delwin(bwin[i][boxi]);
+                bwin[i][boxi] = subwin(fwin, coords.rows, coords.cols, coords.starty, coords.startx);
 
-			do {
 				if (draw_config.use_color) {
-					int pidx = draw_config.ncolors > 1 ? k + 1 : 1;
-					wbkgd(bwin[i][k], COLOR_PAIR(pidx) | A_REVERSE);
+					/* add one because we never override the first color */
+					int pidx = draw_config.ncolors > 1 ? boxi + 1 : 1;
+					wbkgd(bwin[i][boxi], COLOR_PAIR(pidx) | A_REVERSE);
 				} else {
-					box(bwin[i][k], 0, 0);
+					box(bwin[i][boxi], 0, 0);
 				}
-				k--;
-			} while (k >= 0);
 
-			j++;
+				draw_height += coords.rows + draw_config.box_space;
+				boxi++;
+			}
+			bari++;
 		}
 
 		wnoutrefresh(fwin);
 		doupdate();
-
-		// TODO - this is not the best at the moment. there is some "clickiness"
-		// during playback which becomes more noticeable as your milliseconds
-		// decreases.
-		if ((res = stream(pctrl, pstream, data)) != 0) {
-			goto finish;
-		}
 
 		/* listen for input */
 		flushinp();
