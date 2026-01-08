@@ -60,7 +60,7 @@ typedef struct coords_t {
 	int starty; /* the starting y-position (topmost) of the bar */
 } coords_t;
 
-int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config, draw_config_t draw_config);
-int draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
-    fft_config_t fft_config, draw_config_t draw_config);
+int draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, audio_ctrl_t pctrl, audio_stream_t pstream, fft_config_t fft_config, draw_config_t draw_config);
+int draw_frequency(audio_ctrl_t rctrl, audio_stream_t rstream,
+    audio_ctrl_t pctrl, audio_stream_t pstream, fft_config_t fft_config, draw_config_t draw_config);
 #endif

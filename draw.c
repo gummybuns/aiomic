@@ -152,21 +152,12 @@ handle_scroll(char keypress, int *scroll_pos)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, fft_config_t fft_config, draw_config_t draw_config)
+draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, audio_ctrl_t pctrl, audio_stream_t pstream, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
 	int option, scroll_pos, res;
 	WINDOW *dpad;
-	audio_ctrl_t pctrl;
-	audio_stream_t pstream;
 
-
-	if ((res = build_audio_ctrl(&pctrl, "/dev/audio1", AUMODE_PLAY)) != 0) {
-		return -1;
-	}
-	if ((res = build_stream_from_ctrl(pctrl, 150, &pstream)) != 0) {
-		return -1;
-	}
 	scroll_pos = 0;
 	dpad = newpad(150, draw_config.cols);
 	scrollok(dpad, TRUE);
@@ -268,7 +259,7 @@ calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_s
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
+draw_frequency(audio_ctrl_t rctrl, audio_stream_t rstream, audio_ctrl_t pctrl, audio_stream_t pstream,
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress, debug_on;
@@ -281,12 +272,10 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	bar_t *bars;
 	bin_t *bins;
 	WINDOW *dpad, *fwin, ***bwin;
-	audio_ctrl_t pctrl;
-	audio_stream_t pstream;
 	coords_t coords;
 
-	data = malloc(sizeof(u_char) * audio_stream.total_size);
-	pcm = malloc(sizeof(float) * audio_stream.total_samples);
+	data = malloc(sizeof(u_char) * rstream.total_size);
+	pcm = malloc(sizeof(float) * rstream.total_samples);
 	bars = malloc(sizeof(bar_t) * draw_config.nbars);
 	bins = malloc(sizeof(bin_t) * fft_config.nbins);
 	bwin = malloc(sizeof(WINDOW **) * draw_config.nbars);
@@ -299,13 +288,6 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 	fwin = newwin(draw_config.rows, draw_config.cols, 0, 0);
 	wrefresh(fwin);
 
-	if ((res = build_audio_ctrl(&pctrl, "/dev/audio1", AUMODE_PLAY)) != 0) {
-		return -1;
-	}
-	if ((res = build_stream_from_ctrl(pctrl, 150, &pstream)) != 0) {
-		return -1;
-	}
-
 	for (i = 0; i < draw_config.nbars; i++) {
 		for (j = 0; j < draw_config.nboxes; j++) {
 			bwin[i][j] = NULL;
@@ -317,7 +299,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
 
-		if ((res = stream(ctrl, audio_stream, data)) != 0) {
+		if ((res = stream(rctrl, rstream, data)) != 0) {
 			goto finish;
 		}
 
@@ -330,7 +312,7 @@ draw_frequency(audio_ctrl_t ctrl, audio_stream_t audio_stream,
 
 		c++;
 
-		if ((res = to_normalized_pcm(audio_stream, data, pcm)) != 0) {
+		if ((res = to_normalized_pcm(rstream, data, pcm)) != 0) {
 			goto finish;
 		}
 

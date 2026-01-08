@@ -97,16 +97,17 @@ build_draw_config(draw_config_t *config)
 	return 0;
 }
 
-static const char * shortopts = "c:d:e:f:m:p:s:H:N:W:C:E:M:S:XU";
+static const char * shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:XU";
 static struct option longopts[] = {
 	{ "channels", 		required_argument, 	NULL,	'c' },
 	{ "device", 		required_argument, 	NULL,	'd' },
 	{ "encoding",		required_argument,	NULL,	'e' },
 	{ "fft-samples",	required_argument,	NULL,	'f' },
 	{ "fft-fmin",		required_argument,	NULL,	'm' },
+	{ "output-device",	required_argument,	NULL,	'o' },
 	{ "precision",		required_argument,	NULL,	'p' },
 	{ "sample-rate",	required_argument,	NULL,	's' },
-	{ "color",		required_argument,	NULL,	'C' },
+	{ "color",			required_argument,	NULL,	'C' },
 	{ "color-end",		required_argument,	NULL,	'E' },
 	{ "box-height",		required_argument,	NULL,	'H' },
 	{ "milliseconds",	required_argument,	NULL,	'M' },
@@ -122,11 +123,11 @@ main(int argc, char *argv[])
 {
 	int c, ch, i, option, res;
 	u_int fft_samples, fft_fmin, ms;
-	const char *path;
+	const char *path, *opath;
 	float t;
-	audio_ctrl_t rctrl;
+	audio_ctrl_t rctrl, *pctrl;
 	audio_config_t audio_config;
-	audio_stream_t rstream;
+	audio_stream_t rstream, pstream;
 	color_t cstart, cend;
 	fft_config_t fft_config;
 	draw_config_t draw_config;
@@ -134,6 +135,8 @@ main(int argc, char *argv[])
 	setprogname(argv[0]);
 
 	path =                      DEFAULT_PATH;
+	opath = 					NULL;
+	pctrl = 					NULL;
 
 	audio_config.buffer_size =  UNSET;
 	audio_config.channels =     UNSET;
@@ -172,6 +175,10 @@ main(int argc, char *argv[])
 			break;
 		case 'm':
 			decode_uint(optarg, &fft_fmin);
+			break;
+		case 'o':
+			opath = optarg;
+			pctrl = malloc(sizeof(audio_ctrl_t));
 			break;
 		case 'p':
 			decode_uint(optarg, &(audio_config.precision));
@@ -231,11 +238,29 @@ main(int argc, char *argv[])
 		goto handle_error;
 	}
 
-/*
-	if ((res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
+	/* pad devices cannot have their configurations changed */
+	if (!is_pad_device(rctrl.path) && (res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
 		goto handle_error;
 	}
-*/
+
+	if (opath != NULL) {
+		if ((res = build_audio_ctrl(pctrl, opath, AUMODE_PLAY)) != 0) {
+			goto handle_error;
+		}
+
+		/* play ctrl must match the record controller configuration */
+		if ((res = update_audio_ctrl(pctrl, rctrl.config)) != 0) {
+			goto handle_error;
+		}
+
+		/* the buffer sizes must match or you get a clicky sound */
+		/* TODO i wish there was a better way to manage this */
+		if (is_pad_device(rctrl.path)) rctrl.config.buffer_size = pctrl->config.buffer_size;
+
+		if ((res = build_stream_from_ctrl(*pctrl, ms, &pstream)) != 0) {
+			goto handle_error;
+		}
+	}
 
 	if ((res = build_stream_from_ctrl(rctrl, ms, &rstream)) != 0) {
 		goto handle_error;
@@ -290,9 +315,9 @@ main(int argc, char *argv[])
 		}
 
 		if (option == DRAW_INFO) {
-			option = draw_info(rctrl, rstream, fft_config, draw_config);
+			option = draw_info(rctrl, rstream, *pctrl, pstream, fft_config, draw_config);
 		} else if (option == DRAW_FREQ) {
-			option = draw_frequency(rctrl, rstream, fft_config,
+			option = draw_frequency(rctrl, rstream, *pctrl, pstream, fft_config,
 			    draw_config);
 		} else {
 			break;

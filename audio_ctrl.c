@@ -31,10 +31,13 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <regex.h>
 
 #include "audio_ctrl.h"
 #include "audio_stream.h"
 #include "error_codes.h"
+
+#define PRINFO(m, i) (m == AUMODE_RECORD ? &(i.record) : &(i.play))
 
 /*
  * Translate standard encoding definitions
@@ -100,100 +103,86 @@ get_mode(audio_ctrl_t ctrl)
 	}
 }
 
+char
+is_pad_device(const char *path)
+{
+	int res, cflags;
+	size_t nmatch;
+	regex_t preg;
+
+	cflags = REG_EXTENDED | REG_ICASE | REG_NOSUB;
+	regcomp(&preg, "/dev/pad[[:digit:]]+", cflags);
+	res = regexec(&preg, path, nmatch, 0, 0);
+	regfree(&preg);
+
+	return res == 0;
+}
+
+int
+build_pad_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
+{
+
+}
+
 /*
  * Initializes an audio controller based on the file path to the audio device
  */
 int
 build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
-{
-	int fd;
+ {
+	int fd, oflag;
 	audio_info_t info, format;
+	struct audio_prinfo *pri, *prf;
 
+	oflag = mode == AUMODE_RECORD ? O_RDONLY : O_WRONLY;
+	fd = open(path, oflag);
+	if (fd == -1) {
+		return E_CTRL_FILE_OPEN;
+	}
 
-	if (mode == AUMODE_RECORD) {
-		fd = open(path, O_RDONLY);
-		if (fd == -1) {
-			return E_CTRL_FILE_OPEN;
-		}
-		ctrl->path = path;
-		ctrl->fd = fd;
-		ctrl->mode = mode;
+	ctrl->path = path;
+	ctrl->fd = fd;
+	ctrl->mode = mode;
 
+	if (is_pad_device(path)) {
 		ctrl->config.precision = 16;
 		ctrl->config.encoding = AUDIO_ENCODING_SLINEAR_LE;
-		ctrl->config.buffer_size = 376320;
+		ctrl->config.buffer_size = 2000;
 		ctrl->config.sample_rate = 44100;
 		ctrl->config.channels = 2;
-
-		/*
-		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
-			return E_CTRL_GETINFO;
-		}
-		if (ioctl(ctrl->fd, AUDIO_GETFORMAT, &format) == -1) {
-			return E_CTRL_GETFORMAT;
-		}
-
-		info.record.buffer_size = format.record.buffer_size;
-		info.record.sample_rate = format.record.sample_rate;
-		info.record.precision = format.record.precision;
-		info.record.channels = format.record.channels;
-		info.record.encoding = format.record.encoding;
-
-		if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
-			return E_CTRL_SETINFO;
-		}
-
-		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
-			return E_CTRL_GETINFO;
-		}
-		ctrl->config.precision = info.record.precision;
-		ctrl->config.encoding = info.record.encoding;
-		ctrl->config.buffer_size = info.record.buffer_size;
-		ctrl->config.sample_rate = info.record.sample_rate;
-		ctrl->config.channels = info.record.channels;
-		*/
-	} else {
-		fd = open(path, O_WRONLY);
-		if (fd == -1) {
-			return E_CTRL_FILE_OPEN;
-		}
-		ctrl->path = path;
-		ctrl->fd = fd;
-		ctrl->mode = mode;
-
-		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
-			return E_CTRL_GETINFO;
-		}
-		if (ioctl(ctrl->fd, AUDIO_GETFORMAT, &format) == -1) {
-			return E_CTRL_GETFORMAT;
-		}
-
-		info.play.buffer_size = format.record.buffer_size;
-		info.play.sample_rate = format.record.sample_rate;
-		info.play.precision = format.record.precision;
-		info.play.channels = format.record.channels;
-		info.play.encoding = format.record.encoding;
-		//info.play.channels = 1;
-
-		info.play.buffer_size = 376320;
-		info.play.sample_rate = 44100;
-		info.play.precision = 16;
-		info.play.channels = 2;
-		info.play.encoding = AUDIO_ENCODING_SLINEAR_LE;
-
-		if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
-			return E_CTRL_SETINFO;
-		}
-
-		if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
-			return E_CTRL_GETINFO;
-		}
-		ctrl->config.precision = info.play.precision;
-		ctrl->config.encoding = info.play.encoding;
-		ctrl->config.buffer_size = info.play.buffer_size;
-		ctrl->config.sample_rate = info.play.sample_rate;
-		ctrl->config.channels = info.play.channels;
+		return 0;
 	}
+
+	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+		return E_CTRL_GETINFO;
+	}
+	if (ioctl(ctrl->fd, AUDIO_GETFORMAT, &format) == -1) {
+		return E_CTRL_GETFORMAT;
+	}
+
+	pri = PRINFO(mode, info);
+	prf = PRINFO(mode, format);
+	pri->buffer_size = prf->buffer_size;
+	pri->sample_rate = prf->sample_rate;
+	pri->precision = prf->precision;
+	pri->channels = prf->channels;
+	pri->encoding = prf->encoding;
+
+	if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
+		return E_CTRL_SETINFO;
+	}
+
+	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
+		return E_CTRL_GETINFO;
+	}
+
+
+	pri = PRINFO(mode, info);
+	ctrl->config.precision = pri->precision;
+	ctrl->config.encoding = pri->encoding;
+	ctrl->config.buffer_size = pri->buffer_size;
+	ctrl->config.sample_rate = pri->sample_rate;
+	ctrl->config.channels = pri->channels;
 
 	return 0;
 }
@@ -202,16 +191,19 @@ int
 update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
 {
 	audio_info_t info;
+	struct audio_prinfo *pri;
 
 	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
 		return E_CTRL_GETINFO;
 	}
 
-	if (cfg.buffer_size > 0) info.record.buffer_size = cfg.buffer_size;
-	if (cfg.channels > 0) info.record.channels = cfg.channels;
-	if (cfg.encoding > 0) info.record.encoding = cfg.encoding;
-	if (cfg.precision > 0) info.record.precision = cfg.precision;
-	if (cfg.sample_rate > 0) info.record.sample_rate = cfg.sample_rate;
+	pri = PRINFO(ctrl->mode, info);
+
+	if (cfg.buffer_size > 0) pri->buffer_size = cfg.buffer_size;
+	if (cfg.channels > 0) pri->channels = cfg.channels;
+	if (cfg.encoding > 0) pri->encoding = cfg.encoding;
+	if (cfg.precision > 0) pri->precision = cfg.precision;
+	if (cfg.sample_rate > 0) pri->sample_rate = cfg.sample_rate;
 
 	if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
 		return E_CTRL_SETINFO;
@@ -221,11 +213,13 @@ update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
 	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
 		return E_CTRL_GETINFO;
 	}
-	ctrl->config.precision = info.record.precision;
-	ctrl->config.encoding = info.record.encoding;
-	ctrl->config.buffer_size = info.record.buffer_size;
-	ctrl->config.sample_rate = info.record.sample_rate;
-	ctrl->config.channels = info.record.channels;
+
+	pri = PRINFO(ctrl->mode, info);
+	ctrl->config.precision = pri->precision;
+	ctrl->config.encoding = pri->encoding;
+	ctrl->config.buffer_size = pri->buffer_size;
+	ctrl->config.sample_rate = pri->sample_rate;
+	ctrl->config.channels = pri->channels;
 
 	return 0;
 }
