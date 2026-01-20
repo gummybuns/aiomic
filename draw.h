@@ -30,7 +30,6 @@
 #define AUDIO_DRAW_H
 
 #include "audio_ctrl.h"
-#include "audio_stream.h"
 #include "draw_config.h"
 #include "fft.h"
 

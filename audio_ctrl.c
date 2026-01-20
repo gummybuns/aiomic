@@ -31,11 +31,12 @@
 
 #include <fcntl.h>
 #include <math.h>
-#include <stdio.h>
 #include <regex.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "audio_ctrl.h"
-#include "audio_stream.h"
 #include "error_codes.h"
 
 #define PRINFO(m, i) (m == AUMODE_RECORD ? &(i.record) : &(i.play))
@@ -46,30 +47,10 @@ calc_total_samples(audio_ctrl_t *ctrl)
 	return (u_int) ceilf((float)ctrl->stream.ms / 1000 * (float)ctrl->config.sample_rate * (float)ctrl->config.channels);
 }
 
-/* TODO - why cant i just do total_samples * bytes_per_sample */
 inline u_int
 calc_total_size(audio_ctrl_t *ctrl)
 {
-	u_int i;
-	u_int bytes_per_sample;
-	u_int nsamples, size;
-	u_int total_size;
-	float samples_per_buffer;
-
-	bytes_per_sample = ctrl->config.precision / 8;
-	samples_per_buffer = ceilf((float)ctrl->config.buffer_size / (float) bytes_per_sample);
-
-	i = ctrl->stream.total_samples;
-	total_size = 0;
-	while (i > 0) {
-		/* the size of the buffer is samples_per_buffer or whats left */
-		nsamples = (u_int)fminf((float)i, samples_per_buffer);
-		size = nsamples * bytes_per_sample;
-		total_size += size;
-		i = i - nsamples;
-	}
-
-	return total_size;
+	return ctrl->stream.total_samples * ctrl->config.precision / 8;
 }
 
 /*
@@ -257,6 +238,38 @@ update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
 
 	ctrl->stream.total_samples = calc_total_samples(ctrl);
 	ctrl->stream.total_size = calc_total_size(ctrl);
+
+	return 0;
+}
+
+/*
+ * Record or Play the audio stream based on the audio controller mode
+ */
+int
+stream(audio_ctrl_t *ctrl, u_char *data)
+{
+	u_int i, ns;
+	ssize_t io_count;
+	io_count = 0;
+	i = 0;
+
+	while (i < ctrl->stream.total_size) {
+		/* the size of the buffer or whats left */
+		ns = (u_int)fminf((float)ctrl->config.buffer_size,
+		    (float)(ctrl->stream.total_size - i));
+		if (ctrl->mode == AUMODE_RECORD) {
+			io_count = read(ctrl->fd, data, ns);
+		} else {
+			io_count = write(ctrl->fd, data, ns);
+		}
+
+		if (io_count < 0) {
+			return E_STREAM_IO_ERROR;
+		}
+
+		i += ns;
+		data += ns;
+	}
 
 	return 0;
 }

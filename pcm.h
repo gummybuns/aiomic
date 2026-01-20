@@ -30,7 +30,6 @@
 #define PCM_H
 
 #include "audio_ctrl.h"
-#include "audio_stream.h"
 
 typedef struct pcm_converter_t {
 	void (*swap_func)(u_char *); /* le <> be - can be null */

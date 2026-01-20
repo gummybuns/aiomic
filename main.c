@@ -39,7 +39,6 @@
 #include <unistd.h>
 
 #include "audio_ctrl.h"
-#include "audio_stream.h"
 #include "colors.h"
 #include "decode.h"
 #include "draw.h"

@@ -32,7 +32,6 @@
 #include <err.h>
 
 #include "audio_ctrl.h"
-#include "audio_stream.h"
 #include "draw.h"
 #include "draw_config.h"
 #include "error_codes.h"

@@ -33,6 +33,7 @@
 
 #define CTRL_CFG_PAUSE 1
 #define CTRL_CFG_PLAY 0
+#define STREAM_BYTE_SIZE 8
 
 typedef struct audio_config_t {
 	u_int buffer_size; /* size of the audio device buffer in bytes */
@@ -61,5 +62,5 @@ int update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t config);
 char is_pad_device(const char *path);
 const char *get_encoding_name(u_int encoding);
 const char *get_mode(audio_ctrl_t ctrl);
-
+int stream(audio_ctrl_t *ctrl, u_char *data);
 #endif
