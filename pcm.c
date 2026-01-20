@@ -167,16 +167,13 @@ build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
  * Convert the raw audio data into normalized pcm data
  */
 int
-to_normalized_pcm(audio_ctrl_t *ctrl, u_char *data, float *pcm)
+to_normalized_pcm(u_char *data, float *pcm, u_int encoding, u_int precision, u_int size)
 {
 	u_char *c;
-	u_int encoding, i, j, precision;
+	u_int i, j;
 	u_int inc;
 	int err;
 	pcm_converter_t converter;
-
-	precision = ctrl->config.precision;
-	encoding = ctrl->config.encoding;
 
 	if ((err = build_converter(&converter, precision, encoding)) > 0) {
 		return err;
@@ -185,7 +182,7 @@ to_normalized_pcm(audio_ctrl_t *ctrl, u_char *data, float *pcm)
 	inc = precision / STREAM_BYTE_SIZE;
 	c = data;
 	j = 0;
-	for (i = 0; i < ctrl->stream.total_size; i += inc) {
+	for (i = 0; i < size; i += inc) {
 		if (converter.swap_func != NULL) {
 			converter.swap_func(c);
 		}

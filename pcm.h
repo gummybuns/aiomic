@@ -38,6 +38,6 @@ typedef struct pcm_converter_t {
 } pcm_converter_t;
 
 int build_converter(pcm_converter_t *converter, u_int prec, u_int enc);
-int to_normalized_pcm(audio_ctrl_t *ctrl, u_char *data, float *out);
+int to_normalized_pcm(u_char *data, float *out, u_int enc, u_int prec, u_int sz);
 
 #endif

@@ -50,7 +50,7 @@ calc_total_samples(audio_ctrl_t *ctrl)
 inline u_int
 calc_total_size(audio_ctrl_t *ctrl)
 {
-	return ctrl->stream.total_samples * ctrl->config.precision / 8;
+	return ctrl->stream.total_samples * ctrl->config.precision / STREAM_BYTE_SIZE;
 }
 
 /*

@@ -64,6 +64,9 @@ print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
 	    ctrl.config.precision, ctrl.config.channels, config_encoding, ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples);
 }
 
+/*
+ * Print details about the fft configuration
+ */
 static void
 print_fft_config(WINDOW *w, fft_config_t config)
 {
@@ -78,6 +81,9 @@ print_fft_config(WINDOW *w, fft_config_t config)
 		config.fs, config.nbins, config.nframes, config.nsamples, config.total_samples,config.fmin,config.fmax);
 }
 
+/*
+ * Print details about the draw configurations
+ */
 static void
 print_draw_config(WINDOW *w,draw_config_t config)
 {
@@ -118,6 +124,9 @@ check_options(int keypress)
 	}
 }
 
+/*
+ * Update the scroll position based on a keypress
+ */
 static void
 handle_scroll(char keypress, int *scroll_pos)
 {
@@ -131,13 +140,13 @@ handle_scroll(char keypress, int *scroll_pos)
 
 
 /*
- * Display information about the audio controlers + streams
+ * Display information about the audio controlers
  *
  * Wait for a user to press one of navigation options. Returns the pressed
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, int ms, fft_config_t fft_config, draw_config_t draw_config)
+draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
 	int option, scroll_pos, res;
@@ -244,7 +253,7 @@ calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_s
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, int ms, 
+draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, 
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress, debug_on;
@@ -296,7 +305,7 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, int ms,
 
 		c++;
 
-		if ((res = to_normalized_pcm(rctrl, data, pcm)) != 0) {
+		if ((res = to_normalized_pcm(data, pcm, rctrl->config.encoding, rctrl->config.precision, rctrl->stream.total_size)) != 0) {
 			goto finish;
 		}
 
