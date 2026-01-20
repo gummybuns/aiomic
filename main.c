@@ -127,7 +127,6 @@ main(int argc, char *argv[])
 	float t;
 	audio_ctrl_t rctrl, *pctrl;
 	audio_config_t audio_config;
-	audio_stream_t rstream, pstream;
 	color_t cstart, cend;
 	fft_config_t fft_config;
 	draw_config_t draw_config;
@@ -234,7 +233,7 @@ main(int argc, char *argv[])
 	noecho();
 	curs_set(0);
 
-	if ((res = build_audio_ctrl(&rctrl, path, AUMODE_RECORD)) != 0) {
+	if ((res = build_audio_ctrl(&rctrl, path, AUMODE_RECORD, ms)) != 0) {
 		goto handle_error;
 	}
 
@@ -244,7 +243,7 @@ main(int argc, char *argv[])
 	}
 
 	if (opath != NULL) {
-		if ((res = build_audio_ctrl(pctrl, opath, AUMODE_PLAY)) != 0) {
+		if ((res = build_audio_ctrl(pctrl, opath, AUMODE_PLAY, ms)) != 0) {
 			goto handle_error;
 		}
 
@@ -254,20 +253,13 @@ main(int argc, char *argv[])
 		}
 
 		/* the buffer sizes must match or you get a clicky sound */
-		/* TODO i wish there was a better way to manage this */
-		if (is_pad_device(rctrl.path)) rctrl.config.buffer_size = pctrl->config.buffer_size;
-
-		if ((res = build_stream_from_ctrl(*pctrl, ms, &pstream)) != 0) {
-			goto handle_error;
+		if (is_pad_device(rctrl.path)) {
+			rctrl.config.buffer_size = pctrl->config.buffer_size;
 		}
 	}
 
-	if ((res = build_stream_from_ctrl(rctrl, ms, &rstream)) != 0) {
-		goto handle_error;
-	}
 
-
-	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rstream.total_samples, (float)fft_fmin);
+	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rctrl.stream.total_samples, (float)fft_fmin);
 	if (res != 0) {
 		goto handle_error;
 	}
@@ -276,8 +268,7 @@ main(int argc, char *argv[])
 		goto handle_error;
 	}
 
-	// TODO - this is dumb but you need to start-color before you build
-	// draw config because it depends on some methods in there
+	/* you must call start_color before building draw_config */
 	if (draw_config.use_color) {
 		if (!has_colors()) {
 			res = E_NO_COLORS;
@@ -315,10 +306,9 @@ main(int argc, char *argv[])
 		}
 
 		if (option == DRAW_INFO) {
-			option = draw_info(rctrl, rstream, *pctrl, pstream, fft_config, draw_config);
+			option = draw_info(&rctrl, pctrl, ms, fft_config, draw_config);
 		} else if (option == DRAW_FREQ) {
-			option = draw_frequency(rctrl, rstream, *pctrl, pstream, fft_config,
-			    draw_config);
+			option = draw_frequency(&rctrl, pctrl, ms, fft_config, draw_config);
 		} else {
 			break;
 		}

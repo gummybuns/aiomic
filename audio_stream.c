@@ -104,21 +104,21 @@ build_stream(u_int milliseconds, u_int channels, u_int sample_rate,
  * Record or Play the audio stream based on the audio controller mode
  */
 int
-stream(audio_ctrl_t ctrl, audio_stream_t stream, u_char *data)
+stream(audio_ctrl_t *ctrl, u_char *data)
 {
 	u_int i, ns;
 	ssize_t io_count;
 	io_count = 0;
 	i = 0;
 
-	while (i < stream.total_size) {
+	while (i < ctrl->stream.total_size) {
 		/* the size of the buffer or whats left */
-		ns = (u_int)fminf((float)ctrl.config.buffer_size,
-		    (float)(stream.total_size - i));
-		if (ctrl.mode == AUMODE_RECORD) {
-			io_count = read(ctrl.fd, data, ns);
+		ns = (u_int)fminf((float)ctrl->config.buffer_size,
+		    (float)(ctrl->stream.total_size - i));
+		if (ctrl->mode == AUMODE_RECORD) {
+			io_count = read(ctrl->fd, data, ns);
 		} else {
-			io_count = write(ctrl.fd, data, ns);
+			io_count = write(ctrl->fd, data, ns);
 		}
 
 		if (io_count < 0) {

@@ -30,6 +30,7 @@
 #include <sys/ioctl.h>
 
 #include <fcntl.h>
+#include <math.h>
 #include <stdio.h>
 #include <regex.h>
 
@@ -38,6 +39,38 @@
 #include "error_codes.h"
 
 #define PRINFO(m, i) (m == AUMODE_RECORD ? &(i.record) : &(i.play))
+
+inline u_int
+calc_total_samples(audio_ctrl_t *ctrl)
+{
+	return (u_int) ceilf((float)ctrl->stream.ms / 1000 * (float)ctrl->config.sample_rate * (float)ctrl->config.channels);
+}
+
+/* TODO - why cant i just do total_samples * bytes_per_sample */
+inline u_int
+calc_total_size(audio_ctrl_t *ctrl)
+{
+	u_int i;
+	u_int bytes_per_sample;
+	u_int nsamples, size;
+	u_int total_size;
+	float samples_per_buffer;
+
+	bytes_per_sample = ctrl->config.precision / 8;
+	samples_per_buffer = ceilf((float)ctrl->config.buffer_size / (float) bytes_per_sample);
+
+	i = ctrl->stream.total_samples;
+	total_size = 0;
+	while (i > 0) {
+		/* the size of the buffer is samples_per_buffer or whats left */
+		nsamples = (u_int)fminf((float)i, samples_per_buffer);
+		size = nsamples * bytes_per_sample;
+		total_size += size;
+		i = i - nsamples;
+	}
+
+	return total_size;
+}
 
 /*
  * Translate standard encoding definitions
@@ -118,17 +151,11 @@ is_pad_device(const char *path)
 	return res == 0;
 }
 
-int
-build_pad_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
-{
-
-}
-
 /*
  * Initializes an audio controller based on the file path to the audio device
  */
 int
-build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
+build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms)
  {
 	int fd, oflag;
 	audio_info_t info, format;
@@ -150,6 +177,9 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
 		ctrl->config.buffer_size = 2000;
 		ctrl->config.sample_rate = 44100;
 		ctrl->config.channels = 2;
+		ctrl->stream.ms = ms;
+		ctrl->stream.total_samples = calc_total_samples(ctrl);
+		ctrl->stream.total_size = calc_total_size(ctrl);
 		return 0;
 	}
 
@@ -183,6 +213,10 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode)
 	ctrl->config.buffer_size = pri->buffer_size;
 	ctrl->config.sample_rate = pri->sample_rate;
 	ctrl->config.channels = pri->channels;
+
+	ctrl->stream.ms = ms;
+	ctrl->stream.total_samples = calc_total_samples(ctrl);
+	ctrl->stream.total_size = calc_total_size(ctrl);
 
 	return 0;
 }
@@ -220,6 +254,9 @@ update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
 	ctrl->config.buffer_size = pri->buffer_size;
 	ctrl->config.sample_rate = pri->sample_rate;
 	ctrl->config.channels = pri->channels;
+
+	ctrl->stream.total_samples = calc_total_samples(ctrl);
+	ctrl->stream.total_size = calc_total_size(ctrl);
 
 	return 0;
 }

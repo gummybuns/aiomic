@@ -42,14 +42,21 @@ typedef struct audio_config_t {
 	u_int sample_rate; /* number of samples per second */
 } audio_config_t;
 
+typedef struct stream_t {
+	u_int ms;
+	u_int total_size;
+	u_int total_samples;
+} stream_t;
+
 typedef struct audio_ctrl_t {
 	int fd;                /* file descriptor to the audio device */
 	u_int mode;            /* record vs play */
 	audio_config_t config; /* the configuration of the audio device */
+	stream_t stream;
 	const char *path;            /* the path to the audio device */
 } audio_ctrl_t;
 
-int build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode);
+int build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms);
 int update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t config);
 char is_pad_device(const char *path);
 const char *get_encoding_name(u_int encoding);

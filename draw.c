@@ -57,26 +57,12 @@ print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
 	       "\tsample_rate:\t%d\n"
 	       "\tprecision:\t%d\n"
 	       "\tchannels:\t%d\n"
-	       "\tencoding:\t%s\n\n",
+	       "\tencoding:\t%s\n"
+	       "\tmilliseconds:\t%d\n"
+	       "\tsize:\t\t%d\n"
+	       "\tsamples:\t%d\n\n",
 	    ctrl.path, mode, ctrl.config.buffer_size, ctrl.config.sample_rate,
-	    ctrl.config.precision, ctrl.config.channels, config_encoding);
-}
-
-static void
-print_stream(WINDOW *w, audio_stream_t audio_stream)
-{
-	const char *config_encoding;
-
-	config_encoding = get_encoding_name(audio_stream.encoding);
-
-	wprintw(w, "Audio Stream\n"
-		"\tchannels:\t%d\n"
-		"\tmilliseconds:\t%d\n"
-		"\tprecision:\t%d\n"
-		"\ttotal_size:\t%d\n"
-		"\ttotal_samples:\t%d\n"
-		"\tencoding:\t%s\n\n",
-		audio_stream.channels, audio_stream.milliseconds, audio_stream.precision, audio_stream.total_size, audio_stream.total_samples, config_encoding);
+	    ctrl.config.precision, ctrl.config.channels, config_encoding, ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples);
 }
 
 static void
@@ -152,7 +138,7 @@ handle_scroll(char keypress, int *scroll_pos)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, audio_ctrl_t pctrl, audio_stream_t pstream, fft_config_t fft_config, draw_config_t draw_config)
+draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, int ms, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
 	int option, scroll_pos, res;
@@ -166,10 +152,10 @@ draw_info(audio_ctrl_t ctrl, audio_stream_t audio_stream, audio_ctrl_t pctrl, au
 	nodelay(stdscr, FALSE);
 	for (;;) {
 		wmove(dpad, 0, 0);
-		print_ctrl(dpad, ctrl);
-		print_stream(dpad, audio_stream);
-		print_ctrl(dpad, pctrl);
-		print_stream(dpad, pstream);
+		print_ctrl(dpad, *rctrl);
+		if (pctrl != NULL) {
+			print_ctrl(dpad, *pctrl);
+		}
 		print_fft_config(dpad, fft_config);
 		print_draw_config(dpad, draw_config);
 		wscrl(dpad, scroll_pos);
@@ -259,7 +245,7 @@ calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_s
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t rctrl, audio_stream_t rstream, audio_ctrl_t pctrl, audio_stream_t pstream,
+draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, int ms, 
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress, debug_on;
@@ -274,8 +260,8 @@ draw_frequency(audio_ctrl_t rctrl, audio_stream_t rstream, audio_ctrl_t pctrl, a
 	WINDOW *dpad, *fwin, ***bwin;
 	coords_t coords;
 
-	data = malloc(sizeof(u_char) * rstream.total_size);
-	pcm = malloc(sizeof(float) * rstream.total_samples);
+	data = malloc(sizeof(u_char) * rctrl->stream.total_size);
+	pcm = malloc(sizeof(float) * rctrl->stream.total_samples);
 	bars = malloc(sizeof(bar_t) * draw_config.nbars);
 	bins = malloc(sizeof(bin_t) * fft_config.nbins);
 	bwin = malloc(sizeof(WINDOW **) * draw_config.nbars);
@@ -299,20 +285,19 @@ draw_frequency(audio_ctrl_t rctrl, audio_stream_t rstream, audio_ctrl_t pctrl, a
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
 
-		if ((res = stream(rctrl, rstream, data)) != 0) {
+		if ((res = stream(rctrl, data)) != 0) {
 			goto finish;
 		}
 
-		// TODO - this is not the best at the moment. there is some "clickiness"
-		// during playback which becomes more noticeable as your milliseconds
-		// decreases.
-		if ((res = stream(pctrl, pstream, data)) != 0) {
-			goto finish;
+		if (pctrl != NULL) {
+			if ((res = stream(pctrl, data)) != 0) {
+				goto finish;
+			}
 		}
 
 		c++;
 
-		if ((res = to_normalized_pcm(rstream, data, pcm)) != 0) {
+		if ((res = to_normalized_pcm(rctrl, data, pcm)) != 0) {
 			goto finish;
 		}
 
