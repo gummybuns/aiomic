@@ -125,6 +125,7 @@ is_pad_device(const char *path)
 	regex_t preg;
 
 	cflags = REG_EXTENDED | REG_ICASE | REG_NOSUB;
+	nmatch = 0;
 	regcomp(&preg, "/dev/pad[[:digit:]]+", cflags);
 	res = regexec(&preg, path, nmatch, 0, 0);
 	regfree(&preg);

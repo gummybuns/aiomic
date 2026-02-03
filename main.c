@@ -1,3 +1,11 @@
+/*
+ * TODO
+ * format the code to look nice
+ * update the Makefile to actually through on warnings
+ * usage()
+ * man page
+ */
+
 /*-
  * Copyright (c) 1997 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -89,8 +97,8 @@ build_draw_config(draw_config_t *config)
 	}
 
 	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
-		config->ncolors = (u_int)fminf((float)config->nboxes, COLORS - 1);
-		config->coffset = (COLORS - 1) - config->ncolors;
+		config->ncolors = (u_int)fminf((float)config->nboxes, (float)COLORS - 1.0f);
+		config->coffset = (u_int)(COLORS - 1) - config->ncolors;
 	}
 
 	return 0;
@@ -120,10 +128,9 @@ static struct option longopts[] = {
 int
 main(int argc, char *argv[])
 {
-	int c, ch, i, option, res;
+	int ch, option, res;
 	u_int fft_samples, fft_fmin, ms;
 	const char *path, *opath;
-	float t;
 	audio_ctrl_t rctrl, *pctrl;
 	audio_config_t audio_config;
 	color_t cstart, cend;
@@ -318,5 +325,5 @@ main(int argc, char *argv[])
 	return 0;
 handle_error:
 	endwin();
-	errx(1, get_error_msg(res));
+	errx(1, "%s", get_error_msg(res));
 }

@@ -43,6 +43,8 @@ __RCSID("$NetBSD: decode.c,v 1.1.8.1 2024/03/12 12:47:40 martin Exp $");
 #include <limits.h>
 #include <err.h>
 
+#include "decode.h"
+
 void
 decode_int(const char *arg, int *intp)
 {

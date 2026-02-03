@@ -8,28 +8,29 @@
 int
 extract_color(int i, color_t *color)
 {
-	color_content(i, &(color->r), &(color->g), &(color->b));
+	color_content((short)i, &(color->r), &(color->g), &(color->b));
 	return 0;
 }
 
 int
-init_color_pairs(int coffset, int n, color_t start, color_t end)
+init_color_pairs(u_int coffset, u_int n, color_t start, color_t end)
 {
-	int i, res;
+	int res;
+	u_int i;
 	short r, g, b;
 	float t;
 
 	for (i = 0; i < n; i++) {
 		t = (float)i / (float)(n - 1);
-		r = (int)((1-t) * start.r + t * end.r);
-		g = (int)((1-t) * start.g + t * end.g);
-		b = (int)((1-t) * start.b + t * end.b);
+		r = (short)((1-t) * start.r + t * end.r);
+		g = (short)((1-t) * start.g + t * end.g);
+		b = (short)((1-t) * start.b + t * end.b);
 
-		res = init_color(i + coffset, r, g, b);
+		res = init_color((short)(i + coffset), r, g, b);
 		if (res != 0) return res;
 
 		/* i + 1 since we cannot override the default pair */
-		init_pair(i + 1, i + coffset, -1);
+		init_pair((short)(i + 1), (short)(i + coffset), -1);
 	}
 
 	return 0;

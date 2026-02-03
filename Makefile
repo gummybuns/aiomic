@@ -6,6 +6,6 @@ SRCS+=	main.c audio_ctrl.c decode.c draw.c draw_config.c fft.c pcm.c colors.c
 LDADD+=	-lcurses -lm
 DPADD+=	${LIBCURSES} ${LIBM}
 
-#WARNS=	6
+WARNS=	6
 
 .include <bsd.prog.mk>

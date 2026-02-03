@@ -49,7 +49,7 @@ validate_draw_config(draw_config_t *config)
 	}
 
 	computed = config->box_height * config->nboxes + config->box_space * config->nboxes;
-	if (computed > config->max_h) {
+	if ((int)computed > config->max_h) {
 		return E_DRW_CONFIG_NBOXES;
 	}
 

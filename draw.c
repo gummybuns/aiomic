@@ -149,7 +149,7 @@ int
 draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
-	int option, scroll_pos, res;
+	int option, scroll_pos;
 	WINDOW *dpad;
 
 	scroll_pos = 0;
@@ -216,7 +216,7 @@ calculate_draw_start(draw_config_t draw_config, bar_t *bars)
 	int active_bars, i;
 
 	active_bars = 0;
-	for (i = 0; i < draw_config.nbars; i++) {
+	for (i = 0; i < (int)draw_config.nbars; i++) {
 		if (bars[i].nbins <= 0)
 			continue;
 		active_bars++;
@@ -225,19 +225,28 @@ calculate_draw_start(draw_config_t draw_config, bar_t *bars)
 	return (int)draw_config.x_padding + (int)(draw_config.max_w - active_bars * (int)draw_config.bar_width - active_bars * (int)draw_config.bar_space) / 2;
 }
 
-/* Calculate the draw coordinates of the bar */
+/*
+ * Calculate the draw coordinates of the bar
+ *
+ * coords - the coordinates to store
+ * cfg - the draw configuration of the app
+ * bi - the bar index
+ * xi - the box index
+ * draw_start - the x offset of the first bar that is drawn
+ * maxy - the maximum height of a bar
+ */
 inline void
 calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_start, int maxy)
 {
 			int cols, offset, rows, startx, starty;
 
-			rows = cfg.use_boxes ? cfg.box_height : maxy;
-			cols = cfg.bar_width;
-			startx = (int)(bi * cfg.bar_width) + draw_start + (int)(bi * cfg.bar_space);
+			rows = cfg.use_boxes ? (int)cfg.box_height : maxy;
+			cols = (int)cfg.bar_width;
+			startx = (bi * (int)cfg.bar_width) + draw_start + (bi * (int)cfg.bar_space);
 
 			/* TODO i dont really know why i need this offset when in bar mode */
 			offset = cfg.use_boxes ? 0 : 1;
-			starty = cfg.max_h - (xi+offset)*rows - xi*cfg.box_space;
+			starty = cfg.max_h - (xi+offset)*rows - xi*(int)cfg.box_space;
 
 			coords->rows = rows;
 			coords->cols = cols;
@@ -256,16 +265,16 @@ int
 draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, 
     fft_config_t fft_config, draw_config_t draw_config)
 {
-	char keypress, debug_on;
-	int active_bars, draw_start, option, res, scroll_pos, draw_height, k;
+	char keypress;
+	int draw_start, option, res, draw_height;
 	int bari, boxi;
 	u_int i, j, c;
-	float avg, freq, scaled_magnitude;
+	float freq, scaled_magnitude;
 	u_char *data;
 	float *pcm;
 	bar_t *bars;
 	bin_t *bins;
-	WINDOW *dpad, *fwin, ***bwin;
+	WINDOW *fwin, ***bwin;
 	coords_t coords;
 
 	data = malloc(sizeof(u_char) * rctrl->stream.total_size);
@@ -318,7 +327,7 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 				if (freq >= bars[j].fmin &&
 				    freq < bars[j].fmax) {
 					bars[j].nbins += 1;
-					bars[j].magnitude += (bins[i].magnitude - bars[j].magnitude) / bars[j].nbins;
+					bars[j].magnitude += (bins[i].magnitude - bars[j].magnitude) / (float)bars[j].nbins;
 					break;
 				}
 			}
@@ -343,7 +352,7 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 			draw_height = 0;
 			boxi = 0;
 			while (draw_height < (int)ceilf(scaled_magnitude)) {
-				calculate_coords(&coords, draw_config, bari, boxi, draw_start, scaled_magnitude);
+				calculate_coords(&coords, draw_config, bari, boxi, draw_start, (int)scaled_magnitude);
 				delwin(bwin[i][boxi]);
                 bwin[i][boxi] = subwin(fwin, coords.rows, coords.cols, coords.starty, coords.startx);
 
@@ -355,7 +364,7 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 					box(bwin[i][boxi], 0, 0);
 				}
 
-				draw_height += coords.rows + draw_config.box_space;
+				draw_height += coords.rows + (int)draw_config.box_space;
 				boxi++;
 			}
 			bari++;
