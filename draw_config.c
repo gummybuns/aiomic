@@ -48,12 +48,14 @@ validate_draw_config(draw_config_t *config)
 		return E_DRW_CONFIG_NBOXES_ZERO;
 	}
 
-	computed = config->box_height * config->nboxes + config->box_space * config->nboxes;
+	computed = config->box_height * config->nboxes +
+		   config->box_space * config->nboxes;
 	if ((int)computed > config->max_h) {
 		return E_DRW_CONFIG_NBOXES;
 	}
 
-	computed = config->nbars * config->bar_width + config->nbars * config->bar_space;
+	computed = config->nbars * config->bar_width +
+		   config->nbars * config->bar_space;
 	if (computed > (u_int)config->max_w) {
 		return E_DRW_CONFIG_NBARS;
 	}

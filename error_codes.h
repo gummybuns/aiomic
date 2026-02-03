@@ -26,7 +26,7 @@
 
 #define E_STREAM_IO_ERROR 3000
 
-static inline const char * get_error_msg(int code);
+static inline const char *get_error_msg(int code);
 
 static inline const char *
 get_error_msg(int code)

@@ -27,8 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "fft.h"
-#include <math.h>
 #include "error_codes.h"
+#include <math.h>
 
 /*
  * Helper function to do the fft math
@@ -98,7 +98,8 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
  * Initialize the fft_config
  */
 int
-build_fft_config(fft_config_t *config, u_int nsamples, u_int fs, u_int total_samples, float fmin)
+build_fft_config(fft_config_t *config, u_int nsamples, u_int fs,
+    u_int total_samples, float fmin)
 {
 
 	if (total_samples < nsamples) {

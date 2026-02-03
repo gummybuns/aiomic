@@ -33,23 +33,23 @@ __RCSID("$NetBSD: decode.c,v 1.1.8.1 2024/03/12 12:47:40 martin Exp $");
 #endif
 
 #include <sys/audioio.h>
-#include <sys/types.h>
 #include <sys/time.h>
+#include <sys/types.h>
 
-#include <curses.h>
 #include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
-#include <limits.h>
+#include <curses.h>
 #include <err.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "decode.h"
 
 void
 decode_int(const char *arg, int *intp)
 {
-	char	*ep;
-	int	ret;
+	char *ep;
+	int ret;
 
 	ret = (int)strtoul(arg, &ep, 10);
 
@@ -63,8 +63,8 @@ decode_int(const char *arg, int *intp)
 void
 decode_uint(const char *arg, unsigned *intp)
 {
-	char	*ep;
-	unsigned	ret;
+	char *ep;
+	unsigned ret;
 
 	ret = (unsigned)strtoul(arg, &ep, 10);
 

@@ -53,12 +53,14 @@ typedef struct bar_t {
 } bar_t;
 
 typedef struct coords_t {
-	int rows; 	/* the height of the bar */
-	int cols; 	/* the width of the bar */
+	int rows;   /* the height of the bar */
+	int cols;   /* the width of the bar */
 	int startx; /* the starting x-position (leftmost) of the bar */
 	int starty; /* the starting y-position (topmost) of the bar */
 } coords_t;
 
-int draw_info(audio_ctrl_t *ctrl, audio_ctrl_t *pctrl, fft_config_t fft_config, draw_config_t draw_config);
-int draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config, draw_config_t draw_config);
+int draw_info(audio_ctrl_t *ctrl, audio_ctrl_t *pctrl, fft_config_t fft_config,
+    draw_config_t draw_config);
+int draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
+    fft_config_t fft_config, draw_config_t draw_config);
 #endif

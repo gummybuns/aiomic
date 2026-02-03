@@ -1,7 +1,6 @@
 /*
  * TODO
  * format the code to look nice
- * update the Makefile to actually through on warnings
  * usage()
  * man page
  */
@@ -86,43 +85,46 @@ build_draw_config(draw_config_t *config)
 	}
 
 	if (IS_UNSET(config->nbars)) {
-		config->nbars = (u_int)config->max_w/(config->bar_width + config->bar_space);
+		config->nbars = (u_int)config->max_w /
+				(config->bar_width + config->bar_space);
 	}
 
 	if (config->use_boxes) {
-		config->nboxes = (u_int)config->max_h/(config->box_height + config->box_space);
+		config->nboxes = (u_int)config->max_h /
+				 (config->box_height + config->box_space);
 	} else {
 		config->nboxes = 1; /* always need at least one box */
 		config->box_height = UNSET;
 	}
 
 	if (config->use_color && config->use_boxes && config->bar_color2 >= 0) {
-		config->ncolors = (u_int)fminf((float)config->nboxes, (float)COLORS - 1.0f);
+		config->ncolors =
+		    (u_int)fminf((float)config->nboxes, (float)COLORS - 1.0f);
 		config->coffset = (u_int)(COLORS - 1) - config->ncolors;
 	}
 
 	return 0;
 }
 
-static const char * shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:XU";
+static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:XU";
 static struct option longopts[] = {
-	{ "channels", 		required_argument, 	NULL,	'c' },
-	{ "device", 		required_argument, 	NULL,	'd' },
-	{ "encoding",		required_argument,	NULL,	'e' },
-	{ "fft-samples",	required_argument,	NULL,	'f' },
-	{ "fft-fmin",		required_argument,	NULL,	'm' },
-	{ "output-device",	required_argument,	NULL,	'o' },
-	{ "precision",		required_argument,	NULL,	'p' },
-	{ "sample-rate",	required_argument,	NULL,	's' },
-	{ "color",			required_argument,	NULL,	'C' },
-	{ "color-end",		required_argument,	NULL,	'E' },
-	{ "box-height",		required_argument,	NULL,	'H' },
-	{ "milliseconds",	required_argument,	NULL,	'M' },
-	{ "num-bars",		required_argument,	NULL,	'N' },
-	{ "box-space",		required_argument,	NULL,	'S' },
-	{ "use-colors",		no_argument,		NULL,	'U' },
-	{ "use-boxes",		no_argument,		NULL,	'X' },
-	{ "bar-width",		required_argument,	NULL,	'W' },
+	{     "channels", required_argument, NULL, 'c'},
+	{       "device", required_argument, NULL, 'd'},
+	{     "encoding", required_argument, NULL, 'e'},
+	{  "fft-samples", required_argument, NULL, 'f'},
+	{     "fft-fmin", required_argument, NULL, 'm'},
+	{"output-device", required_argument, NULL, 'o'},
+	{    "precision", required_argument, NULL, 'p'},
+	{  "sample-rate", required_argument, NULL, 's'},
+	{        "color", required_argument, NULL, 'C'},
+	{    "color-end", required_argument, NULL, 'E'},
+	{   "box-height", required_argument, NULL, 'H'},
+	{ "milliseconds", required_argument, NULL, 'M'},
+	{     "num-bars", required_argument, NULL, 'N'},
+	{    "box-space", required_argument, NULL, 'S'},
+	{   "use-colors",       no_argument, NULL, 'U'},
+	{    "use-boxes",       no_argument, NULL, 'X'},
+	{    "bar-width", required_argument, NULL, 'W'},
 };
 
 int
@@ -139,32 +141,33 @@ main(int argc, char *argv[])
 
 	setprogname(argv[0]);
 
-	path =                      DEFAULT_PATH;
-	opath = 					NULL;
-	pctrl = 					NULL;
+	path = DEFAULT_PATH;
+	opath = NULL;
+	pctrl = NULL;
 
-	audio_config.buffer_size =  UNSET;
-	audio_config.channels =     UNSET;
-	audio_config.encoding =     UNSET;
-	audio_config.precision =    UNSET;
-	audio_config.sample_rate =  UNSET;
+	audio_config.buffer_size = UNSET;
+	audio_config.channels = UNSET;
+	audio_config.encoding = UNSET;
+	audio_config.precision = UNSET;
+	audio_config.sample_rate = UNSET;
 
-	draw_config.nbars =         UNSET;
-	draw_config.bar_width =     UNSET;
-	draw_config.bar_space =     UNSET;
-	draw_config.use_color =     UNSET;
-	draw_config.use_boxes =     UNSET;
-	draw_config.ncolors =       UNSET;
-	draw_config.bar_color =     DEFAULT_COLOR;
-	draw_config.bar_color2 =    DEFAULT_COLOR;
-	draw_config.box_space =     DEFAULT_BOX_SPACE;
-	draw_config.box_height =    DEFAULT_BOX_HEIGHT;
+	draw_config.nbars = UNSET;
+	draw_config.bar_width = UNSET;
+	draw_config.bar_space = UNSET;
+	draw_config.use_color = UNSET;
+	draw_config.use_boxes = UNSET;
+	draw_config.ncolors = UNSET;
+	draw_config.bar_color = DEFAULT_COLOR;
+	draw_config.bar_color2 = DEFAULT_COLOR;
+	draw_config.box_space = DEFAULT_BOX_SPACE;
+	draw_config.box_height = DEFAULT_BOX_HEIGHT;
 
-	fft_samples =               DEFAULT_NSAMPLES;
-	fft_fmin =                  DEFAULT_FMIN;
-	ms =                        DEFAULT_STREAM_DURATION;
+	fft_samples = DEFAULT_NSAMPLES;
+	fft_fmin = DEFAULT_FMIN;
+	ms = DEFAULT_STREAM_DURATION;
 
-	while ((ch = getopt_long(argc, argv,shortopts, longopts, NULL)) != -1) {
+	while (
+	    (ch = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1) {
 		switch (ch) {
 		case 'c':
 			decode_uint(optarg, &(audio_config.channels));
@@ -244,12 +247,14 @@ main(int argc, char *argv[])
 	}
 
 	/* pad devices cannot have their configurations changed */
-	if (!is_pad_device(rctrl.path) && (res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
+	if (!is_pad_device(rctrl.path) &&
+	    (res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
 		goto handle_error;
 	}
 
 	if (opath != NULL) {
-		if ((res = build_audio_ctrl(pctrl, opath, AUMODE_PLAY, ms)) != 0) {
+		if ((res = build_audio_ctrl(pctrl, opath, AUMODE_PLAY, ms)) !=
+		    0) {
 			goto handle_error;
 		}
 
@@ -264,8 +269,9 @@ main(int argc, char *argv[])
 		}
 	}
 
-
-	res = build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate, rctrl.stream.total_samples, (float)fft_fmin);
+	res =
+	    build_fft_config(&fft_config, fft_samples, rctrl.config.sample_rate,
+		rctrl.stream.total_samples, (float)fft_fmin);
 	if (res != 0) {
 		goto handle_error;
 	}
@@ -300,7 +306,8 @@ main(int argc, char *argv[])
 
 			extract_color(draw_config.bar_color, &cstart);
 			extract_color(draw_config.bar_color2, &cend);
-			init_color_pairs(draw_config.coffset, draw_config.ncolors, cstart, cend);
+			init_color_pairs(draw_config.coffset,
+			    draw_config.ncolors, cstart, cend);
 		}
 	}
 
@@ -312,9 +319,11 @@ main(int argc, char *argv[])
 		}
 
 		if (option == DRAW_INFO) {
-			option = draw_info(&rctrl, pctrl, fft_config, draw_config);
+			option =
+			    draw_info(&rctrl, pctrl, fft_config, draw_config);
 		} else if (option == DRAW_FREQ) {
-			option = draw_frequency(&rctrl, pctrl, fft_config, draw_config);
+			option = draw_frequency(&rctrl, pctrl, fft_config,
+			    draw_config);
 		} else {
 			break;
 		}

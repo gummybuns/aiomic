@@ -54,10 +54,11 @@ typedef struct audio_ctrl_t {
 	u_int mode;            /* record vs play */
 	audio_config_t config; /* the configuration of the audio device */
 	stream_t stream;
-	const char *path;            /* the path to the audio device */
+	const char *path; /* the path to the audio device */
 } audio_ctrl_t;
 
-int build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms);
+int build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode,
+    u_int ms);
 int update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t config);
 char is_pad_device(const char *path);
 const char *get_encoding_name(u_int encoding);

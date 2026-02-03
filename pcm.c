@@ -167,7 +167,8 @@ build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
  * Convert the raw audio data into normalized pcm data
  */
 int
-to_normalized_pcm(u_char *data, float *pcm, u_int encoding, u_int precision, u_int size)
+to_normalized_pcm(u_char *data, float *pcm, u_int encoding, u_int precision,
+    u_int size)
 {
 	u_char *c;
 	u_int i, j;

@@ -44,13 +44,16 @@
 inline u_int
 calc_total_samples(audio_ctrl_t *ctrl)
 {
-	return (u_int) ceilf((float)ctrl->stream.ms / 1000 * (float)ctrl->config.sample_rate * (float)ctrl->config.channels);
+	return (u_int)ceilf((float)ctrl->stream.ms / 1000 *
+			    (float)ctrl->config.sample_rate *
+			    (float)ctrl->config.channels);
 }
 
 inline u_int
 calc_total_size(audio_ctrl_t *ctrl)
 {
-	return ctrl->stream.total_samples * ctrl->config.precision / STREAM_BYTE_SIZE;
+	return ctrl->stream.total_samples * ctrl->config.precision /
+	       STREAM_BYTE_SIZE;
 }
 
 /*
@@ -138,7 +141,7 @@ is_pad_device(const char *path)
  */
 int
 build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms)
- {
+{
 	int fd, oflag;
 	audio_info_t info, format;
 	struct audio_prinfo *pri, *prf;
@@ -188,7 +191,6 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms)
 		return E_CTRL_GETINFO;
 	}
 
-
 	pri = PRINFO(mode, info);
 	ctrl->config.precision = pri->precision;
 	ctrl->config.encoding = pri->encoding;
@@ -215,11 +217,16 @@ update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
 
 	pri = PRINFO(ctrl->mode, info);
 
-	if (cfg.buffer_size > 0) pri->buffer_size = cfg.buffer_size;
-	if (cfg.channels > 0) pri->channels = cfg.channels;
-	if (cfg.encoding > 0) pri->encoding = cfg.encoding;
-	if (cfg.precision > 0) pri->precision = cfg.precision;
-	if (cfg.sample_rate > 0) pri->sample_rate = cfg.sample_rate;
+	if (cfg.buffer_size > 0)
+		pri->buffer_size = cfg.buffer_size;
+	if (cfg.channels > 0)
+		pri->channels = cfg.channels;
+	if (cfg.encoding > 0)
+		pri->encoding = cfg.encoding;
+	if (cfg.precision > 0)
+		pri->precision = cfg.precision;
+	if (cfg.sample_rate > 0)
+		pri->sample_rate = cfg.sample_rate;
 
 	if (ioctl(ctrl->fd, AUDIO_SETINFO, &info) == -1) {
 		return E_CTRL_SETINFO;

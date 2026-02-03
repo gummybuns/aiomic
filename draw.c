@@ -27,9 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <curses.h>
+#include <err.h>
 #include <math.h>
 #include <stdlib.h>
-#include <err.h>
 
 #include "audio_ctrl.h"
 #include "draw.h"
@@ -49,19 +49,21 @@ print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
 	mode = get_mode(ctrl);
 	config_encoding = get_encoding_name(ctrl.config.encoding);
 
-	wprintw(w, "Audio Controller\n"
-	       "\tdevice:\t\t%s\n"
-	       "\tmode:\t\t%s\n"
-	       "\tbuffer_size:\t%d\n"
-	       "\tsample_rate:\t%d\n"
-	       "\tprecision:\t%d\n"
-	       "\tchannels:\t%d\n"
-	       "\tencoding:\t%s\n"
-	       "\tmilliseconds:\t%d\n"
-	       "\tsize:\t\t%d\n"
-	       "\tsamples:\t%d\n\n",
+	wprintw(w,
+	    "Audio Controller\n"
+	    "\tdevice:\t\t%s\n"
+	    "\tmode:\t\t%s\n"
+	    "\tbuffer_size:\t%d\n"
+	    "\tsample_rate:\t%d\n"
+	    "\tprecision:\t%d\n"
+	    "\tchannels:\t%d\n"
+	    "\tencoding:\t%s\n"
+	    "\tmilliseconds:\t%d\n"
+	    "\tsize:\t\t%d\n"
+	    "\tsamples:\t%d\n\n",
 	    ctrl.path, mode, ctrl.config.buffer_size, ctrl.config.sample_rate,
-	    ctrl.config.precision, ctrl.config.channels, config_encoding, ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples);
+	    ctrl.config.precision, ctrl.config.channels, config_encoding,
+	    ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples);
 }
 
 /*
@@ -70,41 +72,48 @@ print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
 static void
 print_fft_config(WINDOW *w, fft_config_t config)
 {
-	wprintw(w, "FFT\n"
-		"\tfs:\t\t%d\n"
-		"\tnbins:\t\t%d\n"
-		"\tnframes:\t%d\n"
-		"\tnsamples:\t%d\n"
-		"\ttotal_samples:\t%d\n"
-		"\tfmin:\t\t%.2f\n"
-		"\tfmax:\t\t%.2f\n\n",
-		config.fs, config.nbins, config.nframes, config.nsamples, config.total_samples,config.fmin,config.fmax);
+	wprintw(w,
+	    "FFT\n"
+	    "\tfs:\t\t%d\n"
+	    "\tnbins:\t\t%d\n"
+	    "\tnframes:\t%d\n"
+	    "\tnsamples:\t%d\n"
+	    "\ttotal_samples:\t%d\n"
+	    "\tfmin:\t\t%.2f\n"
+	    "\tfmax:\t\t%.2f\n\n",
+	    config.fs, config.nbins, config.nframes, config.nsamples,
+	    config.total_samples, config.fmin, config.fmax);
 }
 
 /*
  * Print details about the draw configurations
  */
 static void
-print_draw_config(WINDOW *w,draw_config_t config)
+print_draw_config(WINDOW *w, draw_config_t config)
 {
-	wprintw(w,"DRAW_CONFIG\n"
-		"\trows:\t\t%d\n"
-		"\tcols:\t\t%d\n"
-		"\tmax_h:\t\t%d\n"
-		"\tmax_w:\t\t%d\n"
-		"\ty_padding:\t%d\n"
-		"\tx_padding:\t%d\n"
-		"\tnbars:\t\t%d\n"
-		"\tbar_width:\t%d\n"
-		"\tbar_space:\t%d\n"
-		"\tuse_boxes:\t%d\n"
-		"\tnboxes:\t\t%d\n"
-		"\tbox_space:\t%d\n"
-		"\tbox_height:\t%d\n"
-		"\tuse_color:\t%d\n"
-		"\tbar_color:\t%d\n"
-		"\tbar_color2:\t%d\n",
-		config.rows, config.cols, config.max_h, config.max_w, config.y_padding, config.x_padding, config.nbars, config.bar_width, config.bar_space, config.use_boxes, config.nboxes, config.box_space, config.box_height, config.use_color, config.bar_color, config.bar_color2);
+	wprintw(w,
+	    "DRAW_CONFIG\n"
+	    "\trows:\t\t%d\n"
+	    "\tcols:\t\t%d\n"
+	    "\tmax_h:\t\t%d\n"
+	    "\tmax_w:\t\t%d\n"
+	    "\ty_padding:\t%d\n"
+	    "\tx_padding:\t%d\n"
+	    "\tnbars:\t\t%d\n"
+	    "\tbar_width:\t%d\n"
+	    "\tbar_space:\t%d\n"
+	    "\tuse_boxes:\t%d\n"
+	    "\tnboxes:\t\t%d\n"
+	    "\tbox_space:\t%d\n"
+	    "\tbox_height:\t%d\n"
+	    "\tuse_color:\t%d\n"
+	    "\tbar_color:\t%d\n"
+	    "\tbar_color2:\t%d\n",
+	    config.rows, config.cols, config.max_h, config.max_w,
+	    config.y_padding, config.x_padding, config.nbars, config.bar_width,
+	    config.bar_space, config.use_boxes, config.nboxes, config.box_space,
+	    config.box_height, config.use_color, config.bar_color,
+	    config.bar_color2);
 }
 
 /*
@@ -138,7 +147,6 @@ handle_scroll(char keypress, int *scroll_pos)
 	}
 }
 
-
 /*
  * Display information about the audio controlers
  *
@@ -146,7 +154,8 @@ handle_scroll(char keypress, int *scroll_pos)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config, draw_config_t draw_config)
+draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config,
+    draw_config_t draw_config)
 {
 	char keypress;
 	int option, scroll_pos;
@@ -222,7 +231,11 @@ calculate_draw_start(draw_config_t draw_config, bar_t *bars)
 		active_bars++;
 	}
 
-	return (int)draw_config.x_padding + (int)(draw_config.max_w - active_bars * (int)draw_config.bar_width - active_bars * (int)draw_config.bar_space) / 2;
+	return (int)draw_config.x_padding +
+	       (int)(draw_config.max_w -
+		     active_bars * (int)draw_config.bar_width -
+		     active_bars * (int)draw_config.bar_space) /
+		   2;
 }
 
 /*
@@ -236,22 +249,24 @@ calculate_draw_start(draw_config_t draw_config, bar_t *bars)
  * maxy - the maximum height of a bar
  */
 inline void
-calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_start, int maxy)
+calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi,
+    int draw_start, int maxy)
 {
-			int cols, offset, rows, startx, starty;
+	int cols, offset, rows, startx, starty;
 
-			rows = cfg.use_boxes ? (int)cfg.box_height : maxy;
-			cols = (int)cfg.bar_width;
-			startx = (bi * (int)cfg.bar_width) + draw_start + (bi * (int)cfg.bar_space);
+	rows = cfg.use_boxes ? (int)cfg.box_height : maxy;
+	cols = (int)cfg.bar_width;
+	startx =
+	    (bi * (int)cfg.bar_width) + draw_start + (bi * (int)cfg.bar_space);
 
-			/* TODO i dont really know why i need this offset when in bar mode */
-			offset = cfg.use_boxes ? 0 : 1;
-			starty = cfg.max_h - (xi+offset)*rows - xi*(int)cfg.box_space;
+	/* TODO i dont really know why i need this offset when in bar mode */
+	offset = cfg.use_boxes ? 0 : 1;
+	starty = cfg.max_h - (xi + offset) * rows - xi * (int)cfg.box_space;
 
-			coords->rows = rows;
-			coords->cols = cols;
-			coords->startx = startx;
-			coords->starty = starty;
+	coords->rows = rows;
+	coords->cols = cols;
+	coords->startx = startx;
+	coords->starty = starty;
 }
 
 /*
@@ -262,7 +277,7 @@ calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi, int draw_s
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, 
+draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
     fft_config_t fft_config, draw_config_t draw_config)
 {
 	char keypress;
@@ -314,7 +329,9 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 
 		c++;
 
-		if ((res = to_normalized_pcm(data, pcm, rctrl->config.encoding, rctrl->config.precision, rctrl->stream.total_size)) != 0) {
+		if ((res = to_normalized_pcm(data, pcm, rctrl->config.encoding,
+			 rctrl->config.precision, rctrl->stream.total_size)) !=
+		    0) {
 			goto finish;
 		}
 
@@ -327,7 +344,10 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 				if (freq >= bars[j].fmin &&
 				    freq < bars[j].fmax) {
 					bars[j].nbins += 1;
-					bars[j].magnitude += (bins[i].magnitude - bars[j].magnitude) / (float)bars[j].nbins;
+					bars[j].magnitude +=
+					    (bins[i].magnitude -
+						bars[j].magnitude) /
+					    (float)bars[j].nbins;
 					break;
 				}
 			}
@@ -347,24 +367,32 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 			scaled_magnitude = fminf(bars[i].magnitude,
 			    (float)(draw_config.max_h - draw_config.y_padding));
 			/* need at least a height of 2 to draw a box */
-			scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
+			scaled_magnitude =
+			    scaled_magnitude < 2 ? 2 : scaled_magnitude;
 
 			draw_height = 0;
 			boxi = 0;
 			while (draw_height < (int)ceilf(scaled_magnitude)) {
-				calculate_coords(&coords, draw_config, bari, boxi, draw_start, (int)scaled_magnitude);
+				calculate_coords(&coords, draw_config, bari,
+				    boxi, draw_start, (int)scaled_magnitude);
 				delwin(bwin[i][boxi]);
-                bwin[i][boxi] = subwin(fwin, coords.rows, coords.cols, coords.starty, coords.startx);
+				bwin[i][boxi] = subwin(fwin, coords.rows,
+				    coords.cols, coords.starty, coords.startx);
 
 				if (draw_config.use_color) {
-					/* add one because we never override the first color */
-					int pidx = draw_config.ncolors > 1 ? boxi + 1 : 1;
-					wbkgd(bwin[i][boxi], COLOR_PAIR(pidx) | A_REVERSE);
+					/* add one because we never override the
+					 * first color */
+					int pidx = draw_config.ncolors > 1
+						       ? boxi + 1
+						       : 1;
+					wbkgd(bwin[i][boxi],
+					    COLOR_PAIR(pidx) | A_REVERSE);
 				} else {
 					box(bwin[i][boxi], 0, 0);
 				}
 
-				draw_height += coords.rows + (int)draw_config.box_space;
+				draw_height +=
+				    coords.rows + (int)draw_config.box_space;
 				boxi++;
 			}
 			bari++;
@@ -377,7 +405,8 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 		flushinp();
 		keypress = (char)getch();
 		option = check_options(keypress);
-		if (option != 0 && option != DRAW_FREQ && option != DRAW_DEBUG) {
+		if (option != 0 && option != DRAW_FREQ &&
+		    option != DRAW_DEBUG) {
 			res = option;
 			goto finish;
 		}

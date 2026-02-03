@@ -38,4 +38,3 @@ typedef struct color_t {
 int init_color_pairs(u_int cstart, u_int n, color_t s, color_t e);
 int extract_color(int i, color_t *color);
 #endif
-
