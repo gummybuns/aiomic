@@ -40,6 +40,7 @@
 .Op Fl e Ar encoding
 .Op Fl f Ar fft-samples
 .Op Fl m Ar fft-min
+.Op Fl o Ar output-device
 .Op Fl p Ar precision
 .Op Fl s Ar sample-rate
 .Op Fl C Ar color
@@ -83,6 +84,10 @@ samples configures the precision of the fourier transform (bins = samples / 2).
 Defaults to 1024.
 .It Fl m, Fl -fft-min Ar fft-min Ac
 The starting frequency for the first bar of the visualization. Defaults to 50.
+.It Fl o, Fl -output-device Ar output-device Ac
+The audio device to play the recorded audio. The output device will be
+configured to match the same settings as the
+.Ar device
 .It Fl p, Fl -precision Ar precision Ac
 The bit precision of each sample. Defaults to the preconfigured value for the
 device.
@@ -135,6 +140,34 @@ View the Frequency domain of the recorded audio.
 View all configuration details. Can use j/k to scroll.
 .It Q
 Exit the application.
+.Sh Playback Support
+.Pp
+.Nm
+supports playback of the recorded audio when the
+.Ar output-device
+is specified. The
+.Ar output-device
+will have its device configuration match the settings of the
+.Ar device
+and will throw an error if for some reason that configuration fails to set.
+There is no noise/echo reduction and
+.Nm
+is easily susceptible to a painful feedback loop unless the
+.Ar output-device
+is headphones or something that prevents the
+.Ar device
+from picking up output.
+.Pp
+.Nm
+can support
+.Xr pad 4
+devices when specified as the
+.Ar device
+and playback can then be echo'd when specifying the
+.Ar output-device
+as a physical audio device.
+.D1 audiov -d /dev/pad0 -o /dev/audio1
+.D1 mpg123 -a /dev/audio2 /path/to/music.mp3
 .Sh EXAMPLES
 .D1 audiov -d /dev/audio2
 .D1 audiov -U -W 8
@@ -144,8 +177,31 @@ Exit the application.
 .Sh SEE ALSO
 .Xr audio 4
 .Xr audiocfg 1
+.Xr pad 4
 .Sh AUTHORS
 .Nm
 was written by
 .An Zac Brown
 .Aq gummybuns@protonmail.com .
+.Sh Bugs
+.Pp
+When
+.Ar device
+is specified as a
+.Xr pad 4
+device,
+.Nm
+will show a blank screen until audio is streamed to the newly created device
+.Pp
+When
+.Ar device
+is specified as a
+.Xr pad 4
+device
+and
+.Ar output-device
+is not included,
+.Nm
+will appear to flicker. I believe this is because the
+.Xr pad 4
+device is padded with zeros until the full dataset can be read.
