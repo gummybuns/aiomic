@@ -1,10 +1,3 @@
-/*
- * TODO
- * format the code to look nice
- * usage()
- * man page
- */
-
 /*-
  * Copyright (c) 1997 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -63,6 +56,19 @@
 
 #define IS_UNSET(p) (p == UNSET)
 
+static void
+usage(void)
+{
+	fputs("audiov "
+	      "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
+	      "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
+	      "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
+	      "\t[-M milliseconds] [-N num-bars] [-S box-space] [-U]\n"
+	      "\t[-W bar-width]] [-X]\n",
+	    stderr);
+	exit(1);
+}
+
 static inline int
 build_draw_config(draw_config_t *config)
 {
@@ -106,7 +112,7 @@ build_draw_config(draw_config_t *config)
 	return 0;
 }
 
-static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:XU";
+static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:hXU";
 static struct option longopts[] = {
 	{     "channels", required_argument, NULL, 'c'},
 	{       "device", required_argument, NULL, 'd'},
@@ -116,6 +122,7 @@ static struct option longopts[] = {
 	{"output-device", required_argument, NULL, 'o'},
 	{    "precision", required_argument, NULL, 'p'},
 	{  "sample-rate", required_argument, NULL, 's'},
+	{	 "help",       no_argument, NULL, 'h'},
 	{        "color", required_argument, NULL, 'C'},
 	{    "color-end", required_argument, NULL, 'E'},
 	{   "box-height", required_argument, NULL, 'H'},
@@ -194,6 +201,9 @@ main(int argc, char *argv[])
 		case 's':
 			decode_uint(optarg, &(audio_config.sample_rate));
 			break;
+		case 'h':
+			usage();
+			break;
 		case 'H':
 			decode_uint(optarg, &(draw_config.box_height));
 			break;
@@ -229,8 +239,7 @@ main(int argc, char *argv[])
 			decode_uint(optarg, &(draw_config.bar_width));
 			break;
 		default:
-			// TODO - usage()
-			err(1, "%c is invalid argument", (char)ch);
+			usage();
 		}
 	}
 
