@@ -47,7 +47,7 @@
 #include "fft.h"
 
 #define UNSET 0
-#define DEFAULT_STREAM_DURATION 150
+#define DEFAULT_STREAM_DURATION 100
 #define DEFAULT_PATH "/dev/sound"
 #define DEFAULT_BAR_WIDTH 4
 #define DEFAULT_BOX_HEIGHT 2
