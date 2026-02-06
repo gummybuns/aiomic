@@ -45,6 +45,7 @@
 #include "draw_config.h"
 #include "error_codes.h"
 #include "fft.h"
+#include "xmalloc.h"
 
 #define UNSET 0
 #define DEFAULT_STREAM_DURATION 100
@@ -193,7 +194,7 @@ main(int argc, char *argv[])
 			break;
 		case 'o':
 			opath = optarg;
-			pctrl = malloc(sizeof(audio_ctrl_t));
+			pctrl = xmalloc(sizeof(audio_ctrl_t));
 			break;
 		case 'p':
 			decode_uint(optarg, &(audio_config.precision));

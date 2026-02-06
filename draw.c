@@ -37,6 +37,7 @@
 #include "error_codes.h"
 #include "fft.h"
 #include "pcm.h"
+#include "xmalloc.h"
 
 /*
  * Print details about the audio controller
@@ -285,20 +286,24 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 	int bari, boxi;
 	u_int i, j, c;
 	float freq, scaled_magnitude;
-	u_char *data;
-	float *pcm;
-	bar_t *bars;
-	bin_t *bins;
-	WINDOW *fwin, ***bwin;
+	u_char *data = NULL;
+	float *pcm = NULL;
+	bar_t *bars = NULL;
+	bin_t *bins = NULL;
+	WINDOW *fwin, ***bwin = NULL;
 	coords_t coords;
 
-	data = malloc(sizeof(u_char) * rctrl->stream.total_size);
-	pcm = malloc(sizeof(float) * rctrl->stream.total_samples);
-	bars = malloc(sizeof(bar_t) * draw_config.nbars);
-	bins = malloc(sizeof(bin_t) * fft_config.nbins);
-	bwin = malloc(sizeof(WINDOW **) * draw_config.nbars);
+	data = xreallocarray(data, rctrl->stream.total_size, sizeof(u_char));
+	pcm = xreallocarray(pcm, rctrl->stream.total_samples, sizeof(float));
+	bars = xreallocarray(bars, draw_config.nbars, sizeof(bar_t));
+	bins = xreallocarray(bins, fft_config.nbins, sizeof(bin_t));
+	bwin = xreallocarray(bwin, draw_config.nbars, sizeof(WINDOW **));
+
+	memset(bwin, 0, draw_config.nbars * sizeof(WINDOW **));
+
 	for (i = 0; i < draw_config.nbars; i++) {
-		bwin[i] = malloc(sizeof(WINDOW *) * draw_config.nboxes);
+		bwin[i] = xreallocarray(bwin[i],
+		    draw_config.nboxes, sizeof(WINDOW *));
 	}
 
 	nodelay(stdscr, TRUE);

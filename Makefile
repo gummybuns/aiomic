@@ -2,6 +2,7 @@
 #
 PROG=	audiov
 SRCS+=	main.c audio_ctrl.c decode.c draw.c draw_config.c fft.c pcm.c colors.c
+SRCS+=	xmalloc.c
 
 LDADD+=	-lcurses -lm
 DPADD+=	${LIBCURSES} ${LIBM}
