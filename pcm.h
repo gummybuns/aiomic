@@ -31,14 +31,12 @@
 
 #include "audio_ctrl.h"
 
-typedef struct pcm_converter_t {
+struct pcm_converter {
 	void (*swap_func)(u_char *); /* le <> be - can be null */
 	void (*sign_func)(u_char *); /* unsigned -> signed - can be null */
 	float (*normalize_func)(u_char *); /* normalize to a float to 0-1 */
-} pcm_converter_t;
+};
 
-int build_converter(pcm_converter_t *converter, u_int prec, u_int enc);
-int to_normalized_pcm(u_char *data, float *out, u_int enc, u_int prec,
-    u_int sz);
-
+int build_converter(struct pcm_converter *, u_int, u_int);
+int to_normalized_pcm(u_char *, float *, u_int, u_int, u_int);
 #endif

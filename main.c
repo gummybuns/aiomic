@@ -71,7 +71,7 @@ usage(void)
 }
 
 static inline int
-build_draw_config(draw_config_t *config)
+build_draw_config(struct draw_config *config)
 {
 	int rows, cols, x_padding, y_padding;
 
@@ -141,11 +141,11 @@ main(int argc, char *argv[])
 	int ch, option, res;
 	u_int fft_samples, fft_fmin, ms;
 	const char *path, *opath;
-	audio_ctrl_t rctrl, *pctrl;
-	audio_config_t audio_config;
-	color_t cstart, cend;
-	fft_config_t fft_config;
-	draw_config_t draw_config;
+	struct audio_ctrl rctrl, *pctrl;
+	struct audio_config audio_config;
+	struct color cstart, cend;
+	struct fft_config fft_config;
+	struct draw_config draw_config;
 
 	setprogname(argv[0]);
 
@@ -194,7 +194,7 @@ main(int argc, char *argv[])
 			break;
 		case 'o':
 			opath = optarg;
-			pctrl = xmalloc(sizeof(audio_ctrl_t));
+			pctrl = xmalloc(sizeof(struct audio_ctrl));
 			break;
 		case 'p':
 			decode_uint(optarg, &(audio_config.precision));

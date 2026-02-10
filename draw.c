@@ -43,7 +43,7 @@
  * Print details about the audio controller
  */
 static void
-print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
+print_ctrl(WINDOW *w, struct audio_ctrl ctrl)
 {
 	const char *mode, *config_encoding;
 
@@ -71,7 +71,7 @@ print_ctrl(WINDOW *w, audio_ctrl_t ctrl)
  * Print details about the fft configuration
  */
 static void
-print_fft_config(WINDOW *w, fft_config_t config)
+print_fft_config(WINDOW *w, struct fft_config config)
 {
 	wprintw(w,
 	    "FFT\n"
@@ -90,7 +90,7 @@ print_fft_config(WINDOW *w, fft_config_t config)
  * Print details about the draw configurations
  */
 static void
-print_draw_config(WINDOW *w, draw_config_t config)
+print_draw_config(WINDOW *w, struct draw_config config)
 {
 	wprintw(w,
 	    "DRAW_CONFIG\n"
@@ -155,8 +155,8 @@ handle_scroll(char keypress, int *scroll_pos)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config,
-    draw_config_t draw_config)
+draw_info(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl, struct fft_config fft_config,
+    struct draw_config draw_config)
 {
 	char keypress;
 	int option, scroll_pos;
@@ -198,7 +198,7 @@ draw_info(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl, fft_config_t fft_config,
  * the human audio spectrum.
  */
 inline int
-reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
+reset_bars(struct bar *bars, struct draw_config draw_config, struct fft_config fft_config)
 {
 	u_int i;
 	for (i = 0; i < draw_config.nbars; i++) {
@@ -221,7 +221,7 @@ reset_bars(bar_t *bars, draw_config_t draw_config, fft_config_t fft_config)
  * Calculate the starting x position of the first bar
  */
 inline int
-calculate_draw_start(draw_config_t draw_config, bar_t *bars)
+calculate_draw_start(struct draw_config draw_config, struct bar *bars)
 {
 	int active_bars, i;
 
@@ -250,7 +250,7 @@ calculate_draw_start(draw_config_t draw_config, bar_t *bars)
  * maxy - the maximum height of a bar
  */
 inline void
-calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi,
+calculate_coords(struct coords *coords, struct draw_config cfg, int bi, int xi,
     int draw_start, int maxy)
 {
 	int cols, offset, rows, startx, starty;
@@ -278,8 +278,8 @@ calculate_coords(coords_t *coords, draw_config_t cfg, int bi, int xi,
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
-    fft_config_t fft_config, draw_config_t draw_config)
+draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
+    struct fft_config fft_config, struct draw_config draw_config)
 {
 	char keypress;
 	int draw_start, option, res, draw_height;
@@ -288,15 +288,15 @@ draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
 	float freq, scaled_magnitude;
 	u_char *data = NULL;
 	float *pcm = NULL;
-	bar_t *bars = NULL;
-	bin_t *bins = NULL;
+	struct bar *bars = NULL;
+	struct bin *bins = NULL;
 	WINDOW *fwin, ***bwin = NULL;
-	coords_t coords;
+	struct coords coords;
 
 	data = xreallocarray(data, rctrl->stream.total_size, sizeof(u_char));
 	pcm = xreallocarray(pcm, rctrl->stream.total_samples, sizeof(float));
-	bars = xreallocarray(bars, draw_config.nbars, sizeof(bar_t));
-	bins = xreallocarray(bins, fft_config.nbins, sizeof(bin_t));
+	bars = xreallocarray(bars, draw_config.nbars, sizeof(struct bar));
+	bins = xreallocarray(bins, fft_config.nbins, sizeof(struct bin));
 	bwin = xreallocarray(bwin, draw_config.nbars, sizeof(WINDOW **));
 
 	memset(bwin, 0, draw_config.nbars * sizeof(WINDOW **));

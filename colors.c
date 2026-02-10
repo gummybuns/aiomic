@@ -6,14 +6,14 @@
 #include "error_codes.h"
 
 int
-extract_color(int i, color_t *color)
+extract_color(int i, struct color *color)
 {
 	color_content((short)i, &(color->r), &(color->g), &(color->b));
 	return 0;
 }
 
 int
-init_color_pairs(u_int coffset, u_int n, color_t start, color_t end)
+init_color_pairs(u_int coffset, u_int n, struct color start, struct color end)
 {
 	int res;
 	u_int i;

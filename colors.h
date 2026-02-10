@@ -29,12 +29,12 @@
 #ifndef AUDIO_COLORS_H
 #define AUDIO_COLORS_H
 
-typedef struct color_t {
+struct color {
 	short r;
 	short g;
 	short b;
-} color_t;
+};
 
-int init_color_pairs(u_int cstart, u_int n, color_t s, color_t e);
-int extract_color(int i, color_t *color);
+int init_color_pairs(u_int, u_int, struct color, struct color);
+int extract_color(int i, struct color *);
 #endif

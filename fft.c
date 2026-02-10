@@ -64,7 +64,7 @@ _fft(cplx *buf, cplx *out, u_int n, u_int step)
  * averaged over each frame.
  */
 int
-fft(fft_config_t config, bin_t *bins, float *pcm)
+fft(struct fft_config config, struct bin *bins, float *pcm)
 {
 	u_int i, j, start;
 	float real, imag;
@@ -98,7 +98,7 @@ fft(fft_config_t config, bin_t *bins, float *pcm)
  * Initialize the fft_config
  */
 int
-build_fft_config(fft_config_t *config, u_int nsamples, u_int fs,
+build_fft_config(struct fft_config *config, u_int nsamples, u_int fs,
     u_int total_samples, float fmin)
 {
 
@@ -125,7 +125,7 @@ build_fft_config(fft_config_t *config, u_int nsamples, u_int fs,
  * Reset the bins to their initial values
  */
 int
-reset_bins(bin_t *bins, fft_config_t config)
+reset_bins(struct bin *bins, struct fft_config config)
 {
 	u_int i;
 

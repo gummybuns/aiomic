@@ -42,7 +42,7 @@
 #define PRINFO(m, i) (m == AUMODE_RECORD ? &(i.record) : &(i.play))
 
 inline u_int
-calc_total_samples(audio_ctrl_t *ctrl)
+calc_total_samples(struct audio_ctrl *ctrl)
 {
 	return (u_int)ceilf((float)ctrl->stream.ms / 1000 *
 			    (float)ctrl->config.sample_rate *
@@ -50,7 +50,7 @@ calc_total_samples(audio_ctrl_t *ctrl)
 }
 
 inline u_int
-calc_total_size(audio_ctrl_t *ctrl)
+calc_total_size(struct audio_ctrl *ctrl)
 {
 	return ctrl->stream.total_samples * ctrl->config.precision /
 	       STREAM_BYTE_SIZE;
@@ -108,7 +108,7 @@ get_encoding_name(u_int encoding)
  * Get the controller mode as a string
  */
 const char *
-get_mode(audio_ctrl_t ctrl)
+get_mode(struct audio_ctrl ctrl)
 {
 	switch (ctrl.mode) {
 	case AUMODE_PLAY:
@@ -140,7 +140,7 @@ is_pad_device(const char *path)
  * Initializes an audio controller based on the file path to the audio device
  */
 int
-build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms)
+build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode, u_int ms)
 {
 	int fd, oflag;
 	audio_info_t info, format;
@@ -206,7 +206,7 @@ build_audio_ctrl(audio_ctrl_t *ctrl, const char *path, u_int mode, u_int ms)
 }
 
 int
-update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
+update_audio_ctrl(struct audio_ctrl *ctrl, struct audio_config cfg)
 {
 	audio_info_t info;
 	struct audio_prinfo *pri;
@@ -254,7 +254,7 @@ update_audio_ctrl(audio_ctrl_t *ctrl, audio_config_t cfg)
  * Record or Play the audio stream based on the audio controller mode
  */
 int
-stream(audio_ctrl_t *ctrl, u_char *data)
+stream(struct audio_ctrl *ctrl, u_char *data)
 {
 	u_int i, ns;
 	ssize_t io_count;

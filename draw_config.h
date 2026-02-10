@@ -31,7 +31,7 @@
 
 #define PADDING_PCT 0.1f
 
-typedef struct draw_config_t {
+struct draw_config {
 	char use_color;   /* whether to use colors */
 	char use_boxes;   /* whether to render a bar of boxes */
 	int rows;         /* number of rows on screen */
@@ -50,8 +50,7 @@ typedef struct draw_config_t {
 	u_int coffset;    /* the starting pair number of the color */
 	short bar_color;  /* color to paint inside of each bar */
 	short bar_color2; /* second color to transition to */
-} draw_config_t;
+};
 
-int validate_draw_config(draw_config_t *config);
-
+int validate_draw_config(struct draw_config *);
 #endif

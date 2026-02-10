@@ -37,7 +37,7 @@
  * the machine's endian-ness.
  */
 static inline int
-set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
+set_swap_func(struct pcm_converter *converter, u_int precision, u_int encoding)
 {
 	converter->swap_func = NULL;
 
@@ -84,7 +84,7 @@ set_swap_func(pcm_converter_t *converter, u_int precision, u_int encoding)
  * Set the sign function of a converter for an unsigned audio encoding
  */
 static inline int
-set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
+set_sign_func(struct pcm_converter *converter, u_int precision, u_int encoding)
 {
 	converter->sign_func = NULL;
 
@@ -121,7 +121,7 @@ set_sign_func(pcm_converter_t *converter, u_int precision, u_int encoding)
  * Set the normalization function for a converter based on the precision
  */
 static inline int
-set_normalize_func(pcm_converter_t *converter, u_int precision)
+set_normalize_func(struct pcm_converter *converter, u_int precision)
 {
 	switch (precision) {
 	case 8:
@@ -144,7 +144,7 @@ set_normalize_func(pcm_converter_t *converter, u_int precision)
  * Build an pcm_converter
  */
 int
-build_converter(pcm_converter_t *converter, u_int precision, u_int encoding)
+build_converter(struct pcm_converter *converter, u_int precision, u_int encoding)
 {
 	int err;
 
@@ -174,7 +174,7 @@ to_normalized_pcm(u_char *data, float *pcm, u_int encoding, u_int precision,
 	u_int i, j;
 	u_int inc;
 	int err;
-	pcm_converter_t converter;
+	struct pcm_converter converter;
 
 	if ((err = build_converter(&converter, precision, encoding)) > 0) {
 		return err;

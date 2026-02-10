@@ -32,7 +32,7 @@
 #include "error_codes.h"
 
 int
-validate_draw_config(draw_config_t *config)
+validate_draw_config(struct draw_config *config)
 {
 	u_int computed;
 

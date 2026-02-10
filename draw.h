@@ -44,23 +44,22 @@
 
 #define PADDING_PCT 0.1f
 
-typedef struct bar_t {
+struct bar {
 	float fmin;  /* minimum frequency of the bar */
 	float fmax;  /* maximum frequency of the bar */
 	u_int nbins; /* number of bins represented in the bar */
 	float
 	    magnitude; /* sum of all amplitudes of all bins within frequency */
-} bar_t;
+};
 
-typedef struct coords_t {
+struct coords {
 	int rows;   /* the height of the bar */
 	int cols;   /* the width of the bar */
 	int startx; /* the starting x-position (leftmost) of the bar */
 	int starty; /* the starting y-position (topmost) of the bar */
-} coords_t;
+};
 
-int draw_info(audio_ctrl_t *ctrl, audio_ctrl_t *pctrl, fft_config_t fft_config,
-    draw_config_t draw_config);
-int draw_frequency(audio_ctrl_t *rctrl, audio_ctrl_t *pctrl,
-    fft_config_t fft_config, draw_config_t draw_config);
+int draw_info(struct audio_ctrl *, struct audio_ctrl *, struct fft_config,
+    struct draw_config);
+int draw_frequency(struct audio_ctrl *, struct audio_ctrl *, struct fft_config, struct draw_config);
 #endif
