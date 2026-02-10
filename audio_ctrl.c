@@ -140,7 +140,8 @@ is_pad_device(const char *path)
  * Initializes an audio controller based on the file path to the audio device
  */
 int
-build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode, u_int ms)
+build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
+    u_int ms)
 {
 	int fd, oflag;
 	audio_info_t info, format;

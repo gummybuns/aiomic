@@ -61,5 +61,6 @@ struct coords {
 
 int draw_info(struct audio_ctrl *, struct audio_ctrl *, struct fft_config,
     struct draw_config);
-int draw_frequency(struct audio_ctrl *, struct audio_ctrl *, struct fft_config, struct draw_config);
+int draw_frequency(struct audio_ctrl *, struct audio_ctrl *, struct fft_config,
+    struct draw_config);
 #endif

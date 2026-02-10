@@ -144,7 +144,8 @@ set_normalize_func(struct pcm_converter *converter, u_int precision)
  * Build an pcm_converter
  */
 int
-build_converter(struct pcm_converter *converter, u_int precision, u_int encoding)
+build_converter(struct pcm_converter *converter, u_int precision,
+    u_int encoding)
 {
 	int err;
 

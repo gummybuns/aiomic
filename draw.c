@@ -155,8 +155,8 @@ handle_scroll(char keypress, int *scroll_pos)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl, struct fft_config fft_config,
-    struct draw_config draw_config)
+draw_info(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
+    struct fft_config fft_config, struct draw_config draw_config)
 {
 	char keypress;
 	int option, scroll_pos;
@@ -198,7 +198,8 @@ draw_info(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl, struct fft_config 
  * the human audio spectrum.
  */
 inline int
-reset_bars(struct bar *bars, struct draw_config draw_config, struct fft_config fft_config)
+reset_bars(struct bar *bars, struct draw_config draw_config,
+    struct fft_config fft_config)
 {
 	u_int i;
 	for (i = 0; i < draw_config.nbars; i++) {
@@ -302,8 +303,8 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 	memset(bwin, 0, draw_config.nbars * sizeof(WINDOW **));
 
 	for (i = 0; i < draw_config.nbars; i++) {
-		bwin[i] = xreallocarray(bwin[i],
-		    draw_config.nboxes, sizeof(WINDOW *));
+		bwin[i] = xreallocarray(bwin[i], draw_config.nboxes,
+		    sizeof(WINDOW *));
 	}
 
 	nodelay(stdscr, TRUE);

@@ -50,8 +50,8 @@ struct stream {
 };
 
 struct audio_ctrl {
-	int fd;                /* file descriptor to the audio device */
-	u_int mode;            /* record vs play */
+	int fd;                     /* file descriptor to the audio device */
+	u_int mode;                 /* record vs play */
 	struct audio_config config; /* the configuration of the audio device */
 	struct stream stream;
 	const char *path; /* the path to the audio device */

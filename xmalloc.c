@@ -13,13 +13,13 @@
  * called by a name other than "ssh" or "Secure Shell".
  */
 
-#include <sys/cdefs.h>
 #include <err.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/cdefs.h>
 
 #include "xmalloc.h"
 
@@ -53,8 +53,8 @@ xreallocarray(void *ptr, size_t nmemb, size_t size)
 	void *new_ptr = ptr;
 
 	if (reallocarr(&new_ptr, nmemb, size) != 0) {
-		err(2, "xreallocarray: allocating %zu * %zu bytes",
-		    nmemb, size);
+		err(2, "xreallocarray: allocating %zu * %zu bytes", nmemb,
+		    size);
 	}
 	return new_ptr;
 }
