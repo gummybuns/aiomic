@@ -33,6 +33,8 @@
 #include <errno.h>
 #include <getopt.h>
 #include <math.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +47,7 @@
 #include "draw_config.h"
 #include "error_codes.h"
 #include "fft.h"
+#include "threads.h"
 #include "xmalloc.h"
 
 #define UNSET 0
@@ -68,6 +71,63 @@ usage(void)
 	      "\t[-W bar-width]] [-X]\n",
 	    stderr);
 	exit(1);
+}
+
+static void *
+do_draw(void *arg)
+{
+	int option;
+	struct thread_context *ctx = (struct thread_context *)arg;
+
+	option = DRAW_FREQ;
+	for (;;) {
+		if (option >= E_UNHANDLED) {
+			//res = option;
+			//goto handle_error;
+			return NULL;
+		}
+
+		if (option == DRAW_INFO) {
+			option = draw_info(ctx);
+		} else if (option == DRAW_FREQ) {
+			option = draw_frequency(ctx);
+		} else {
+			break;
+		}
+		clear();
+	}
+	return NULL;
+}
+static void *
+do_record(void *arg)
+{
+	int res;
+	struct thread_context *ctx = (struct thread_context *)arg;
+
+	for(;;) {
+		//pthread_mutex_lock(ctx->lock);
+		if ((res = stream(ctx->rctrl, ctx->audio_buf)) != 0) {
+			/* TODO i dont know how to update the return code */
+			/* maybe another global variable or something but there is */
+			/* probably a way to have the method exit and have a return
+			 * status */
+			err(1, "failed to record");
+			return NULL;
+		}
+
+		if (ctx->pctrl != NULL) {
+			if ((res = stream(ctx->pctrl, ctx->audio_buf)) != 0) {
+				pthread_mutex_unlock(ctx->lock);
+				err(1, "failed to play");
+				return NULL;
+			}
+		}
+		sem_post(ctx->recording);
+		sem_wait(ctx->rendering);
+		//pthread_mutex_unlock(ctx->lock);
+	}
+
+	return NULL;
 }
 
 static inline int
@@ -138,14 +198,28 @@ static struct option longopts[] = {
 int
 main(int argc, char *argv[])
 {
-	int ch, option, res;
+	int ch, res;
 	u_int fft_samples, fft_fmin, ms;
 	const char *path, *opath;
-	struct audio_ctrl rctrl, *pctrl;
+	u_char *audio_buf;
 	struct audio_config audio_config;
 	struct color cstart, cend;
-	struct fft_config fft_config;
+	struct thread_context context;
+	struct audio_ctrl rctrl;
+	struct audio_ctrl *pctrl;
 	struct draw_config draw_config;
+	struct fft_config fft_config;
+	pthread_t t1, t2;
+	pthread_mutex_t lock;
+	sem_t recording, rendering;
+
+	context.rctrl = &rctrl;
+	context.pctrl = NULL;
+	context.draw_config = &draw_config;
+	context.fft_config = &fft_config;
+	context.lock = &lock;
+	context.recording = &recording;
+	context.rendering = &rendering;
 
 	setprogname(argv[0]);
 
@@ -195,6 +269,7 @@ main(int argc, char *argv[])
 		case 'o':
 			opath = optarg;
 			pctrl = xmalloc(sizeof(struct audio_ctrl));
+			context.pctrl = pctrl;
 			break;
 		case 'p':
 			decode_uint(optarg, &(audio_config.precision));
@@ -242,6 +317,10 @@ main(int argc, char *argv[])
 		default:
 			usage();
 		}
+	}
+
+	if (pthread_mutex_init(&lock, NULL) != 0) {
+		err(1, "cant generate lock");
 	}
 
 	if (initscr() == NULL) {
@@ -321,24 +400,18 @@ main(int argc, char *argv[])
 		}
 	}
 
-	option = DRAW_FREQ;
-	for (;;) {
-		if (option >= E_UNHANDLED) {
-			res = option;
-			goto handle_error;
-		}
+	context.audio_buf = xreallocarray(audio_buf, rctrl.stream.total_size, sizeof(u_char));
+	sem_init(context.recording, 0, 1);
+	sem_init(context.rendering, 0, 1);
 
-		if (option == DRAW_INFO) {
-			option =
-			    draw_info(&rctrl, pctrl, fft_config, draw_config);
-		} else if (option == DRAW_FREQ) {
-			option = draw_frequency(&rctrl, pctrl, fft_config,
-			    draw_config);
-		} else {
-			break;
-		}
-		clear();
-	}
+	pthread_create(&t1, NULL, do_record, (void *)(&context));
+	pthread_create(&t2, NULL, do_draw, (void *)(&context));
+
+	pthread_join(t1, NULL);
+	pthread_join(t2, NULL);
+	pthread_mutex_destroy(&lock);
+	sem_destroy(context.recording);
+	sem_destroy(context.rendering);
 
 	endwin();
 	return 0;

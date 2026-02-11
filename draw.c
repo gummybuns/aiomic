@@ -29,6 +29,7 @@
 #include <curses.h>
 #include <err.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "audio_ctrl.h"
@@ -37,6 +38,7 @@
 #include "error_codes.h"
 #include "fft.h"
 #include "pcm.h"
+#include "threads.h"
 #include "xmalloc.h"
 
 /*
@@ -155,12 +157,19 @@ handle_scroll(char keypress, int *scroll_pos)
  * navigation option so the main routine can render the next screen
  */
 int
-draw_info(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
-    struct fft_config fft_config, struct draw_config draw_config)
+draw_info(struct thread_context *ctx)
 {
 	char keypress;
 	int option, scroll_pos;
+	struct audio_ctrl *rctrl, *pctrl;
+	struct draw_config draw_config;
+	struct fft_config fft_config;
 	WINDOW *dpad;
+
+	rctrl = ctx->rctrl;
+	pctrl = ctx->pctrl;
+	draw_config = *(ctx->draw_config);
+	fft_config = *(ctx->fft_config);
 
 	scroll_pos = 0;
 	dpad = newpad(150, draw_config.cols);
@@ -279,23 +288,29 @@ calculate_coords(struct coords *coords, struct draw_config cfg, int bi, int xi,
  * navigation option so the main routine can render the next screen
  */
 int
-draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
-    struct fft_config fft_config, struct draw_config draw_config)
+draw_frequency(struct thread_context *ctx)
 {
 	char keypress;
 	int draw_start, option, res, draw_height;
 	int bari, boxi;
 	u_int i, j, c;
+	u_char *data;
 	float freq, scaled_magnitude;
-	u_char *data = NULL;
 	float *pcm = NULL;
+	struct audio_ctrl *rctrl, *pctrl;
 	struct bar *bars = NULL;
 	struct bin *bins = NULL;
+	struct draw_config draw_config;
+	struct fft_config fft_config;
 	WINDOW *fwin, ***bwin = NULL;
 	struct coords coords;
 
-	data = xreallocarray(data, rctrl->stream.total_size, sizeof(u_char));
+	rctrl = ctx->rctrl;
+	pctrl = ctx->pctrl;
+	fft_config = *(ctx->fft_config);
+	draw_config = *(ctx->draw_config);
 	pcm = xreallocarray(pcm, rctrl->stream.total_samples, sizeof(float));
+	data = ctx->audio_buf;
 	bars = xreallocarray(bars, draw_config.nbars, sizeof(struct bar));
 	bins = xreallocarray(bins, fft_config.nbins, sizeof(struct bin));
 	bwin = xreallocarray(bwin, draw_config.nbars, sizeof(WINDOW **));
@@ -310,6 +325,7 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 	nodelay(stdscr, TRUE);
 
 	fwin = newwin(draw_config.rows, draw_config.cols, 0, 0);
+	mvwprintw(fwin, 0, 0, "hello world");
 	wrefresh(fwin);
 
 	for (i = 0; i < draw_config.nbars; i++) {
@@ -323,23 +339,17 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
 
-		if ((res = stream(rctrl, data)) != 0) {
-			goto finish;
-		}
-
-		if (pctrl != NULL) {
-			if ((res = stream(pctrl, data)) != 0) {
-				goto finish;
-			}
-		}
 
 		c++;
 
+		wrefresh(fwin);
+		sem_wait(ctx->recording);
 		if ((res = to_normalized_pcm(data, pcm, rctrl->config.encoding,
 			 rctrl->config.precision, rctrl->stream.total_size)) !=
 		    0) {
 			goto finish;
 		}
+		sem_post(ctx->rendering);
 
 		fft(fft_config, bins, pcm);
 
@@ -430,7 +440,6 @@ finish:
 	free(bins);
 	free(bars);
 	free(pcm);
-	free(data);
 	delwin(fwin);
 	return res;
 }

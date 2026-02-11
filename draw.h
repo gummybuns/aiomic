@@ -29,9 +29,12 @@
 #ifndef AUDIO_DRAW_H
 #define AUDIO_DRAW_H
 
+#include <pthread.h>
+
 #include "audio_ctrl.h"
 #include "draw_config.h"
 #include "fft.h"
+#include "threads.h"
 
 #define DRAW_EXIT -1
 #define DRAW_RECORD 1
@@ -59,8 +62,6 @@ struct coords {
 	int starty; /* the starting y-position (topmost) of the bar */
 };
 
-int draw_info(struct audio_ctrl *, struct audio_ctrl *, struct fft_config,
-    struct draw_config);
-int draw_frequency(struct audio_ctrl *, struct audio_ctrl *, struct fft_config,
-    struct draw_config);
+int draw_info(struct thread_context *);
+int draw_frequency(struct thread_context *);
 #endif
