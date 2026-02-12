@@ -60,14 +60,14 @@
 static void
 usage(void)
 {
-     fputs("audiov "
-	       "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
-           "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
-           "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
-           "\t[-M milliseconds] [-N num-bars] [-R stream-rate] [-S box-space]\n"
-           "\t[-U] [-W bar-width] [-X]\n",
+	fputs("audiov "
+	      "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
+	      "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
+	      "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
+	      "\t[-M milliseconds] [-N num-bars] [-R stream-rate] [-S "
+	      "box-space]\n"
+	      "\t[-U] [-W bar-width] [-X]\n",
 	    stderr);
-
 
 	exit(1);
 }
@@ -125,7 +125,7 @@ static struct option longopts[] = {
 	{"output-device", required_argument, NULL, 'o'},
 	{    "precision", required_argument, NULL, 'p'},
 	{  "sample-rate", required_argument, NULL, 's'},
-	{	      "help",       no_argument, NULL, 'h'},
+	{	 "help",       no_argument, NULL, 'h'},
 	{        "color", required_argument, NULL, 'C'},
 	{    "color-end", required_argument, NULL, 'E'},
 	{   "box-height", required_argument, NULL, 'H'},

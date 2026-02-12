@@ -65,7 +65,8 @@ print_ctrl(WINDOW *w, struct audio_ctrl ctrl)
 	    "\tstream_rate:\t%d\n\n",
 	    ctrl.path, mode, ctrl.config.buffer_size, ctrl.config.sample_rate,
 	    ctrl.config.precision, ctrl.config.channels, config_encoding,
-	    ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples, ctrl.stream.rate);
+	    ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples,
+	    ctrl.stream.rate);
 }
 
 /*
