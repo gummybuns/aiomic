@@ -280,7 +280,6 @@ stream(struct audio_ctrl *ctrl, u_char *data)
 		/* the stream rate or whats left */
 		ns = (u_int)fminf((float)ctrl->stream.rate,
 		    (float)(ctrl->stream.total_size - i));
-		ns = ctrl->stream.rate;
 		if (ctrl->mode == AUMODE_RECORD) {
 			io_count = read(ctrl->fd, data, ns);
 		} else {
