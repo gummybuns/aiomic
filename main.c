@@ -60,13 +60,15 @@
 static void
 usage(void)
 {
-	fputs("audiov "
-	      "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
-	      "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
-	      "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
-	      "\t[-M milliseconds] [-N num-bars] [-S box-space] [-U]\n"
-	      "\t[-W bar-width]] [-X]\n",
+     fputs("audiov "
+	       "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
+           "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
+           "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
+           "\t[-M milliseconds] [-N num-bars] [-R stream-rate] [-S box-space]\n"
+           "\t[-U] [-W bar-width] [-X]\n",
 	    stderr);
+
+
 	exit(1);
 }
 
@@ -113,7 +115,7 @@ build_draw_config(struct draw_config *config)
 	return 0;
 }
 
-static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:hXU";
+static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:R:S:hXU";
 static struct option longopts[] = {
 	{     "channels", required_argument, NULL, 'c'},
 	{       "device", required_argument, NULL, 'd'},
@@ -123,12 +125,13 @@ static struct option longopts[] = {
 	{"output-device", required_argument, NULL, 'o'},
 	{    "precision", required_argument, NULL, 'p'},
 	{  "sample-rate", required_argument, NULL, 's'},
-	{	 "help",       no_argument, NULL, 'h'},
+	{	      "help",       no_argument, NULL, 'h'},
 	{        "color", required_argument, NULL, 'C'},
 	{    "color-end", required_argument, NULL, 'E'},
 	{   "box-height", required_argument, NULL, 'H'},
 	{ "milliseconds", required_argument, NULL, 'M'},
 	{     "num-bars", required_argument, NULL, 'N'},
+	{  "stream_rate", required_argument, NULL, 'R'},
 	{    "box-space", required_argument, NULL, 'S'},
 	{   "use-colors",       no_argument, NULL, 'U'},
 	{    "use-boxes",       no_argument, NULL, 'X'},
@@ -153,6 +156,7 @@ main(int argc, char *argv[])
 	opath = NULL;
 	pctrl = NULL;
 
+	rctrl.stream.rate = UNSET;
 	audio_config.buffer_size = UNSET;
 	audio_config.channels = UNSET;
 	audio_config.encoding = UNSET;
@@ -225,6 +229,9 @@ main(int argc, char *argv[])
 		case 'M':
 			decode_uint(optarg, &ms);
 			break;
+		case 'R':
+			decode_uint(optarg, &(rctrl.stream.rate));
+			break;
 		case 'S':
 			decode_uint(optarg, &(draw_config.box_space));
 			break;
@@ -277,6 +284,8 @@ main(int argc, char *argv[])
 		if (is_pad_device(rctrl.path)) {
 			rctrl.config.buffer_size = pctrl->config.buffer_size;
 		}
+
+		pctrl->stream.rate = rctrl.stream.rate;
 	}
 
 	res =
@@ -321,7 +330,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	option = DRAW_FREQ;
+	option = DRAW_INFO;
 	for (;;) {
 		if (option >= E_UNHANDLED) {
 			res = option;

@@ -49,6 +49,7 @@
 .Op Fl H Ar box-height
 .Op Fl M Ar milliseconds
 .Op Fl N Ar num-bars
+.Op Fl R Ar stream-rate
 .Op Fl S Ar box-space
 .Op Fl U
 .Op Fl W Ar bar-width
@@ -113,6 +114,18 @@ The duration of recorded audio captured every interval. Defaults to 150.
 .It Fl N, Fl -num-bars Ar num-bars Ac
 The number of bars to render. Defaults to a computation based on the configured
 bar-width and the size of the screen.
+.It Fl R, Fl -stream-rate Ar stream-rate Ac
+The number of bytes to both read from the
+.Ar device
+and write to the
+.Ar output-device
+If unspecified, the
+.Ar stream-rate
+will be the minimum between the
+.Ar buffer-size
+and the number of bytes needed to stream the specified
+.Ar milliseconds
+worth of data.
 .It Fl S, Fl -box-space Ar box-space Ac
 Specifies the amount of space between each box of a bar. Will be ignored unless
 box mode (-X) is enabled. Defaults to 1.

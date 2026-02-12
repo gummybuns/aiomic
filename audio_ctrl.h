@@ -44,9 +44,10 @@ struct audio_config {
 };
 
 struct stream {
-	u_int ms;
-	u_int total_size;
-	u_int total_samples;
+	u_int ms;			/* number of milliseconds to stream */
+	u_int total_size;	/* the total size in bytes of the resulting buffer */
+	u_int total_samples; /* the number of samples in the resulting buffer */
+	u_int rate; /* the incremental size to read/write the audio device */
 };
 
 struct audio_ctrl {

@@ -160,12 +160,17 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
 	if (is_pad_device(path)) {
 		ctrl->config.precision = 16;
 		ctrl->config.encoding = AUDIO_ENCODING_SLINEAR_LE;
-		ctrl->config.buffer_size = 2000;
+		ctrl->config.buffer_size = 65268;
 		ctrl->config.sample_rate = 44100;
 		ctrl->config.channels = 2;
 		ctrl->stream.ms = ms;
 		ctrl->stream.total_samples = calc_total_samples(ctrl);
 		ctrl->stream.total_size = calc_total_size(ctrl);
+		if (ctrl->stream.rate == 0) {
+			ctrl->stream.rate = ctrl->stream.total_size;
+		}
+	
+		ctrl->stream.rate = (u_int)fminf((float)ctrl->stream.rate, (float)ctrl->config.buffer_size);
 		return 0;
 	}
 
@@ -202,6 +207,11 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
 	ctrl->stream.ms = ms;
 	ctrl->stream.total_samples = calc_total_samples(ctrl);
 	ctrl->stream.total_size = calc_total_size(ctrl);
+
+	if (ctrl->stream.rate == 0) {
+		ctrl->stream.rate = ctrl->stream.total_size;
+	}
+	ctrl->stream.rate = (u_int)fminf((float)ctrl->stream.rate, (float)ctrl->config.buffer_size);
 
 	return 0;
 }
@@ -247,6 +257,7 @@ update_audio_ctrl(struct audio_ctrl *ctrl, struct audio_config cfg)
 
 	ctrl->stream.total_samples = calc_total_samples(ctrl);
 	ctrl->stream.total_size = calc_total_size(ctrl);
+	ctrl->stream.rate = (u_int)fminf((float)ctrl->stream.rate, (float)ctrl->config.buffer_size);
 
 	return 0;
 }
@@ -263,9 +274,9 @@ stream(struct audio_ctrl *ctrl, u_char *data)
 	i = 0;
 
 	while (i < ctrl->stream.total_size) {
-		/* the size of the buffer or whats left */
-		ns = (u_int)fminf((float)ctrl->config.buffer_size,
-		    (float)(ctrl->stream.total_size - i));
+		/* the stream rate or whats left */
+		ns = (u_int)fminf((float)ctrl->stream.rate, (float)(ctrl->stream.total_size - i));
+		ns = ctrl->stream.rate;
 		if (ctrl->mode == AUMODE_RECORD) {
 			io_count = read(ctrl->fd, data, ns);
 		} else {
