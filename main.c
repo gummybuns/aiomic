@@ -330,7 +330,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	option = DRAW_INFO;
+	option = DRAW_FREQ;
 	for (;;) {
 		if (option >= E_UNHANDLED) {
 			res = option;
