@@ -169,12 +169,6 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
 		ctrl->stream.ms = ms;
 		ctrl->stream.total_samples = calc_total_samples(ctrl);
 		ctrl->stream.total_size = calc_total_size(ctrl);
-		if (ctrl->stream.rate == 0) {
-			ctrl->stream.rate = ctrl->stream.total_size;
-		}
-
-		ctrl->stream.rate = (u_int)fminf((float)ctrl->stream.rate,
-		    (float)ctrl->config.buffer_size);
 		return 0;
 	}
 
