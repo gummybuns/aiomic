@@ -60,6 +60,7 @@ struct audio_ctrl {
 
 int build_audio_ctrl(struct audio_ctrl *, const char *, u_int, u_int);
 int update_audio_ctrl(struct audio_ctrl *, struct audio_config);
+int set_stream_rate(struct audio_ctrl *, u_int);
 char is_pad_device(const char *);
 const char *get_encoding_name(u_int);
 const char *get_mode(struct audio_ctrl);
