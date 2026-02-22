@@ -271,8 +271,6 @@ update_audio_ctrl(struct audio_ctrl *ctrl, struct audio_config cfg)
 
 	ctrl->stream.total_samples = calc_total_samples(ctrl);
 	ctrl->stream.total_size = calc_total_size(ctrl);
-	ctrl->stream.rate = (u_int)fminf((float)ctrl->stream.rate,
-	    (float)ctrl->config.buffer_size);
 
 	return 0;
 }
