@@ -224,12 +224,12 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
  * ctrl's milliseconds
  */
 int
-set_stream_rate(struct audio_ctrl * ctrl, u_int rate)
+set_stream_rate(struct audio_ctrl *ctrl, u_int rate)
 {
 	ctrl->stream.rate = rate;
 	if (ctrl->stream.rate == 0) {
 		ctrl->stream.rate = ctrl->stream.total_size;
-	} 
+	}
 	ctrl->stream.rate = (u_int)fminf((float)ctrl->stream.rate,
 	    (float)ctrl->config.buffer_size);
 

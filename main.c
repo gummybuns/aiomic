@@ -64,7 +64,8 @@ usage(void)
 	      "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
 	      "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
 	      "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
-	      "\t[-M milliseconds] [-N num-bars] [-P play-rate] [-R record-rate]\n "
+	      "\t[-M milliseconds] [-N num-bars] [-P play-rate] [-R "
+	      "record-rate]\n "
 	      "\t[-S box-space] [-U] [-W bar-width] [-X]\n",
 	    stderr);
 
@@ -116,26 +117,26 @@ build_draw_config(struct draw_config *config)
 
 static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:P:R:S:hXU";
 static struct option longopts[] = {
-	{     "channels", required_argument, NULL, 'c'},
-	{       "device", required_argument, NULL, 'd'},
-	{     "encoding", required_argument, NULL, 'e'},
-	{  "fft-samples", required_argument, NULL, 'f'},
-	{     "fft-fmin", required_argument, NULL, 'm'},
-	{"output-device", required_argument, NULL, 'o'},
-	{    "precision", required_argument, NULL, 'p'},
-	{  "sample-rate", required_argument, NULL, 's'},
-	{	 "help",       no_argument, NULL, 'h'},
-	{        "color", required_argument, NULL, 'C'},
-	{    "color-end", required_argument, NULL, 'E'},
-	{   "box-height", required_argument, NULL, 'H'},
-	{ "milliseconds", required_argument, NULL, 'M'},
-	{     "num-bars", required_argument, NULL, 'N'},
-	{  "record_stream_rate", required_argument, NULL, 'R'},
+	{	  "channels", required_argument, NULL, 'c'},
+	{	    "device", required_argument, NULL, 'd'},
+	{	  "encoding", required_argument, NULL, 'e'},
+	{       "fft-samples", required_argument, NULL, 'f'},
+	{	  "fft-fmin", required_argument, NULL, 'm'},
+	{     "output-device", required_argument, NULL, 'o'},
+	{	 "precision", required_argument, NULL, 'p'},
+	{       "sample-rate", required_argument, NULL, 's'},
+	{	      "help",       no_argument, NULL, 'h'},
+	{	     "color", required_argument, NULL, 'C'},
+	{	 "color-end", required_argument, NULL, 'E'},
+	{        "box-height", required_argument, NULL, 'H'},
+	{      "milliseconds", required_argument, NULL, 'M'},
+	{	  "num-bars", required_argument, NULL, 'N'},
+	{"record_stream_rate", required_argument, NULL, 'R'},
 	{  "play_stream_rate", required_argument, NULL, 'P'},
-	{    "box-space", required_argument, NULL, 'S'},
-	{   "use-colors",       no_argument, NULL, 'U'},
-	{    "use-boxes",       no_argument, NULL, 'X'},
-	{    "bar-width", required_argument, NULL, 'W'},
+	{	 "box-space", required_argument, NULL, 'S'},
+	{        "use-colors",       no_argument, NULL, 'U'},
+	{	 "use-boxes",       no_argument, NULL, 'X'},
+	{	 "bar-width", required_argument, NULL, 'W'},
 };
 
 int
