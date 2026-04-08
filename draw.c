@@ -123,11 +123,11 @@ print_draw_config(WINDOW *w, struct draw_config config)
 static int
 check_options(int keypress)
 {
-	if (keypress == 'I') {
+	if (keypress == 'i') {
 		return DRAW_INFO;
-	} else if (keypress == 'Q') {
+	} else if (keypress == 'q') {
 		return DRAW_EXIT;
-	} else if (keypress == 'V') {
+	} else if (keypress == 'v') {
 		return DRAW_FREQ;
 	} else {
 		return 0;
