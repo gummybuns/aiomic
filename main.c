@@ -64,9 +64,11 @@ usage(void)
 	      "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
 	      "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
 	      "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
-	      "\t[-M milliseconds] [-N num-bars] [-S box-space] [-U]\n"
-	      "\t[-W bar-width]] [-X]\n",
+	      "\t[-M milliseconds] [-N num-bars] [-P play-rate] [-R "
+	      "record-rate]\n "
+	      "\t[-S box-space] [-U] [-W bar-width] [-X]\n",
 	    stderr);
+
 	exit(1);
 }
 
@@ -113,33 +115,35 @@ build_draw_config(struct draw_config *config)
 	return 0;
 }
 
-static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:S:hXU";
+static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:P:R:S:hXU";
 static struct option longopts[] = {
-	{     "channels", required_argument, NULL, 'c'},
-	{       "device", required_argument, NULL, 'd'},
-	{     "encoding", required_argument, NULL, 'e'},
-	{  "fft-samples", required_argument, NULL, 'f'},
-	{     "fft-fmin", required_argument, NULL, 'm'},
-	{"output-device", required_argument, NULL, 'o'},
-	{    "precision", required_argument, NULL, 'p'},
-	{  "sample-rate", required_argument, NULL, 's'},
-	{	 "help",       no_argument, NULL, 'h'},
-	{        "color", required_argument, NULL, 'C'},
-	{    "color-end", required_argument, NULL, 'E'},
-	{   "box-height", required_argument, NULL, 'H'},
-	{ "milliseconds", required_argument, NULL, 'M'},
-	{     "num-bars", required_argument, NULL, 'N'},
-	{    "box-space", required_argument, NULL, 'S'},
-	{   "use-colors",       no_argument, NULL, 'U'},
-	{    "use-boxes",       no_argument, NULL, 'X'},
-	{    "bar-width", required_argument, NULL, 'W'},
+	{	  "channels", required_argument, NULL, 'c'},
+	{	    "device", required_argument, NULL, 'd'},
+	{	  "encoding", required_argument, NULL, 'e'},
+	{       "fft-samples", required_argument, NULL, 'f'},
+	{	  "fft-fmin", required_argument, NULL, 'm'},
+	{     "output-device", required_argument, NULL, 'o'},
+	{	 "precision", required_argument, NULL, 'p'},
+	{       "sample-rate", required_argument, NULL, 's'},
+	{	      "help",       no_argument, NULL, 'h'},
+	{	     "color", required_argument, NULL, 'C'},
+	{	 "color-end", required_argument, NULL, 'E'},
+	{        "box-height", required_argument, NULL, 'H'},
+	{      "milliseconds", required_argument, NULL, 'M'},
+	{	  "num-bars", required_argument, NULL, 'N'},
+	{"record_stream_rate", required_argument, NULL, 'R'},
+	{  "play_stream_rate", required_argument, NULL, 'P'},
+	{	 "box-space", required_argument, NULL, 'S'},
+	{        "use-colors",       no_argument, NULL, 'U'},
+	{	 "use-boxes",       no_argument, NULL, 'X'},
+	{	 "bar-width", required_argument, NULL, 'W'},
 };
 
 int
 main(int argc, char *argv[])
 {
 	int ch, option, res;
-	u_int fft_samples, fft_fmin, ms;
+	u_int fft_samples, fft_fmin, ms, record_rate, play_rate;
 	const char *path, *opath;
 	struct audio_ctrl rctrl, *pctrl;
 	struct audio_config audio_config;
@@ -153,6 +157,8 @@ main(int argc, char *argv[])
 	opath = NULL;
 	pctrl = NULL;
 
+	record_rate = UNSET;
+	play_rate = UNSET;
 	audio_config.buffer_size = UNSET;
 	audio_config.channels = UNSET;
 	audio_config.encoding = UNSET;
@@ -225,6 +231,12 @@ main(int argc, char *argv[])
 		case 'M':
 			decode_uint(optarg, &ms);
 			break;
+		case 'P':
+			decode_uint(optarg, &play_rate);
+			break;
+		case 'R':
+			decode_uint(optarg, &record_rate);
+			break;
 		case 'S':
 			decode_uint(optarg, &(draw_config.box_space));
 			break;
@@ -261,6 +273,7 @@ main(int argc, char *argv[])
 	    (res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
 		goto handle_error;
 	}
+	set_stream_rate(&rctrl, record_rate);
 
 	if (opath != NULL) {
 		if ((res = build_audio_ctrl(pctrl, opath, AUMODE_PLAY, ms)) !=
@@ -277,6 +290,8 @@ main(int argc, char *argv[])
 		if (is_pad_device(rctrl.path)) {
 			rctrl.config.buffer_size = pctrl->config.buffer_size;
 		}
+
+		set_stream_rate(pctrl, play_rate);
 	}
 
 	res =

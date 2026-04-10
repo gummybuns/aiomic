@@ -44,9 +44,10 @@ struct audio_config {
 };
 
 struct stream {
-	u_int ms;
-	u_int total_size;
-	u_int total_samples;
+	u_int ms;         /* number of milliseconds to stream */
+	u_int total_size; /* the total size in bytes of the resulting buffer */
+	u_int total_samples; /* the number of samples in the resulting buffer */
+	u_int rate; /* the incremental size to read/write the audio device */
 };
 
 struct audio_ctrl {
@@ -59,6 +60,7 @@ struct audio_ctrl {
 
 int build_audio_ctrl(struct audio_ctrl *, const char *, u_int, u_int);
 int update_audio_ctrl(struct audio_ctrl *, struct audio_config);
+int set_stream_rate(struct audio_ctrl *, u_int);
 char is_pad_device(const char *);
 const char *get_encoding_name(u_int);
 const char *get_mode(struct audio_ctrl);

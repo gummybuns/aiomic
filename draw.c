@@ -61,10 +61,12 @@ print_ctrl(WINDOW *w, struct audio_ctrl ctrl)
 	    "\tencoding:\t%s\n"
 	    "\tmilliseconds:\t%d\n"
 	    "\tsize:\t\t%d\n"
-	    "\tsamples:\t%d\n\n",
+	    "\tsamples:\t%d\n"
+	    "\tstream_rate:\t%d\n\n",
 	    ctrl.path, mode, ctrl.config.buffer_size, ctrl.config.sample_rate,
 	    ctrl.config.precision, ctrl.config.channels, config_encoding,
-	    ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples);
+	    ctrl.stream.ms, ctrl.stream.total_size, ctrl.stream.total_samples,
+	    ctrl.stream.rate);
 }
 
 /*
