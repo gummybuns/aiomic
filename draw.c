@@ -39,6 +39,9 @@
 #include "pcm.h"
 #include "xmalloc.h"
 
+#define CHAR0 48
+#define CHAR9 57
+
 /*
  * Print details about the audio controller
  */
@@ -286,10 +289,12 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 {
 	char keypress;
 	int draw_start, option, res, draw_height;
-	int bari, boxi;
-	u_int i, j, c;
+	int bari, boxi, chan;
+	u_int i, j;
 	float freq, scaled_magnitude;
 	u_char *data = NULL;
+	u_char *cdata = NULL;
+	u_char *dd;
 	float *pcm = NULL;
 	struct bar *bars = NULL;
 	struct bin *bins = NULL;
@@ -297,10 +302,12 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 	struct coords coords;
 
 	data = xreallocarray(data, rctrl->stream.total_size, sizeof(u_char));
+	cdata = xcalloc(rctrl->stream.total_size, sizeof(u_char));
 	pcm = xreallocarray(pcm, rctrl->stream.total_samples, sizeof(float));
 	bars = xreallocarray(bars, draw_config.nbars, sizeof(struct bar));
 	bins = xreallocarray(bins, fft_config.nbins, sizeof(struct bin));
 	bwin = xreallocarray(bwin, draw_config.nbars, sizeof(WINDOW **));
+	chan = -1;
 
 	memset(bwin, 0, draw_config.nbars * sizeof(WINDOW **));
 
@@ -320,8 +327,8 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		}
 	}
 
-	c = 0;
 	for (;;) {
+		dd = data;
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
 
@@ -329,15 +336,18 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 			goto finish;
 		}
 
+		if (chan >= 0) {
+			dd = cdata;
+			copy_by_channel(rctrl, (u_int)chan, data, cdata);
+		}
+
 		if (pctrl != NULL) {
-			if ((res = stream(pctrl, data)) != 0) {
+			if ((res = stream(pctrl, dd)) != 0) {
 				goto finish;
 			}
 		}
 
-		c++;
-
-		if ((res = to_normalized_pcm(data, pcm, rctrl->config.encoding,
+		if ((res = to_normalized_pcm(dd, pcm, rctrl->config.encoding,
 			 rctrl->config.precision, rctrl->stream.total_size)) !=
 		    0) {
 			goto finish;
@@ -365,7 +375,6 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		j = 0;
 
 		werase(fwin);
-		mvwprintw(fwin, 0, 0, "count=%d\n", c);
 
 		bari = 0;
 		for (i = 0; i < draw_config.nbars; i++) {
@@ -380,7 +389,8 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 
 			draw_height = 0;
 			boxi = 0;
-			while (draw_height < (int)ceilf(scaled_magnitude)) {
+			while (draw_height < (int)ceilf(scaled_magnitude) &&
+			       boxi < (int)draw_config.nboxes) {
 				calculate_coords(&coords, draw_config, bari,
 				    boxi, draw_start, (int)scaled_magnitude);
 				delwin(bwin[i][boxi]);
@@ -413,6 +423,12 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		flushinp();
 		keypress = (char)getch();
 		option = check_options(keypress);
+		if (keypress >= CHAR0 && keypress <= CHAR9 &&
+		    (keypress - CHAR0) <= (int)rctrl->config.channels) {
+			memset(cdata, 0,
+			    rctrl->stream.total_size * sizeof(u_char));
+			chan = keypress - CHAR0 - 1;
+		}
 		if (option != 0 && option != DRAW_FREQ &&
 		    option != DRAW_DEBUG) {
 			res = option;
@@ -433,6 +449,7 @@ finish:
 	free(bars);
 	free(pcm);
 	free(data);
+	free(cdata);
 	delwin(fwin);
 	return res;
 }

@@ -306,3 +306,33 @@ stream(struct audio_ctrl *ctrl, u_char *data)
 
 	return 0;
 }
+
+/*
+ * Copy the data of a specific channel.
+ * Assumes that out buffer has already been zero'd out
+ */
+int
+copy_by_channel(struct audio_ctrl *ctrl, u_int chan, u_char *in, u_char *out)
+{
+	u_int i, j, inc;
+	inc = ctrl->config.precision / STREAM_BYTE_SIZE * ctrl->config.channels;
+
+	for (i = 0; i < ctrl->stream.total_size; i += inc) {
+		j = i + chan * ctrl->config.channels - chan;
+		switch (ctrl->config.precision) {
+		case 8:
+			out[j] = in[j];
+			break;
+		case 16:
+			((short *)out)[j] = ((short *)in)[j];
+			break;
+		case 32:
+			((float *)out)[j] = ((float *)in)[j];
+			break;
+		default:
+			return E_FREQ_UNKNOWN_PRECISION;
+		}
+	}
+
+	return 0;
+}

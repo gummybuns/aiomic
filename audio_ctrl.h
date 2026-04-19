@@ -65,4 +65,5 @@ char is_pad_device(const char *);
 const char *get_encoding_name(u_int);
 const char *get_mode(struct audio_ctrl);
 int stream(struct audio_ctrl *, u_char *);
+int copy_by_channel(struct audio_ctrl *, u_int, u_char *, u_char *);
 #endif
