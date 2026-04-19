@@ -49,7 +49,7 @@
 
 #define UNSET 0
 #define DEFAULT_STREAM_DURATION 100
-#define DEFAULT_PATH "/dev/sound"
+#define DEFAULT_PATH "/dev/audio"
 #define DEFAULT_BAR_WIDTH 4
 #define DEFAULT_BOX_HEIGHT 2
 #define DEFAULT_BOX_SPACE 1
@@ -115,14 +115,14 @@ build_draw_config(struct draw_config *config)
 	return 0;
 }
 
-static const char *shortopts = "c:d:e:f:m:o:p:s:H:N:W:C:E:M:P:R:S:hXU";
+static const char *shortopts = "c:d:e:f:m:o::p:s:H:N:W:C:E:M:P:R:S:hXU";
 static struct option longopts[] = {
 	{	  "channels", required_argument, NULL, 'c'},
 	{	    "device", required_argument, NULL, 'd'},
 	{	  "encoding", required_argument, NULL, 'e'},
 	{       "fft-samples", required_argument, NULL, 'f'},
 	{	  "fft-fmin", required_argument, NULL, 'm'},
-	{     "output-device", required_argument, NULL, 'o'},
+	{     "output-device", optional_argument, NULL, 'o'},
 	{	 "precision", required_argument, NULL, 'p'},
 	{       "sample-rate", required_argument, NULL, 's'},
 	{	      "help",       no_argument, NULL, 'h'},
@@ -199,7 +199,13 @@ main(int argc, char *argv[])
 			decode_uint(optarg, &fft_fmin);
 			break;
 		case 'o':
-			opath = optarg;
+			if (optarg == NULL && argv[optind] != NULL &&
+			    argv[optind][0] != '-') {
+				opath = argv[optind];
+				++optind;
+			} else {
+				opath = optarg == NULL ? DEFAULT_PATH : optarg;
+			}
 			pctrl = xmalloc(sizeof(struct audio_ctrl));
 			break;
 		case 'p':
