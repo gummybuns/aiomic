@@ -309,6 +309,7 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 	bwin = xreallocarray(bwin, draw_config.nbars, sizeof(WINDOW **));
 	chan = -1;
 
+	memset(data, 0, rctrl->stream.total_size);
 	memset(bwin, 0, draw_config.nbars * sizeof(WINDOW **));
 
 	for (i = 0; i < draw_config.nbars; i++) {
@@ -331,10 +332,6 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		dd = data;
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
-
-		if ((res = stream(rctrl, data)) != 0) {
-			goto finish;
-		}
 
 		if (chan >= 0) {
 			dd = cdata;
@@ -432,6 +429,10 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		if (option != 0 && option != DRAW_FREQ &&
 		    option != DRAW_DEBUG) {
 			res = option;
+			goto finish;
+		}
+
+		if ((res = stream(rctrl, data)) != 0) {
 			goto finish;
 		}
 	}
