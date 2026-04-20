@@ -1,4 +1,4 @@
-.\"     $NetBSD: audiov.1,v 1.0 2026/06/24 14:23:12 gummybuns Exp $
+.\"     $NetBSD: audiov.1,v 1.0 2026/06/25 17:02:20 gummybuns Exp $
 .\"
 .\" Copyright (c) 2021 The NetBSD Foundation, Inc.
 .\" All rights reserved.
@@ -228,12 +228,3 @@ is not included,
 will appear to flicker. I believe this is because the
 .Xr pad 4
 device is padded with zeros until the full dataset can be read.
-.Pp
-When
-.Ar device
-is specified as a
-.Xr pad 4
-device, the navigation buttons do not reliably work, especially when there is
-no audio streaming. This is because reading from the
-.Ar device
-is a blocking call. If you need to exit ctrl-c works

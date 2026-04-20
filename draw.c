@@ -29,6 +29,7 @@
 #include <curses.h>
 #include <err.h>
 #include <math.h>
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "audio_ctrl.h"
@@ -41,6 +42,16 @@
 
 #define CHAR0 48
 #define CHAR9 57
+
+struct thread_context {
+	struct audio_ctrl *ctrl;
+	u_char *data;
+	pthread_mutex_t *lock;
+	int status;
+};
+
+static void *do_record(void *);
+static void do_record_cleanup(void *);
 
 /*
  * Print details about the audio controller
@@ -202,7 +213,7 @@ draw_info(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
  * bar increases with each one. This should provide more granular detail for
  * the human audio spectrum.
  */
-inline int
+static int
 reset_bars(struct bar *bars, struct draw_config draw_config,
     struct fft_config fft_config)
 {
@@ -226,7 +237,7 @@ reset_bars(struct bar *bars, struct draw_config draw_config,
 /*
  * Calculate the starting x position of the first bar
  */
-inline int
+static int
 calculate_draw_start(struct draw_config draw_config, struct bar *bars)
 {
 	int active_bars, i;
@@ -255,7 +266,7 @@ calculate_draw_start(struct draw_config draw_config, struct bar *bars)
  * draw_start - the x offset of the first bar that is drawn
  * maxy - the maximum height of a bar
  */
-inline void
+static void
 calculate_coords(struct coords *coords, struct draw_config cfg, int bi, int xi,
     int draw_start, int maxy)
 {
@@ -289,7 +300,7 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 {
 	char keypress;
 	int draw_start, option, res, draw_height;
-	int bari, boxi, chan;
+	int bari, boxi, chan, color_fix;
 	u_int i, j;
 	float freq, scaled_magnitude;
 	u_char *data = NULL;
@@ -300,6 +311,9 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 	struct bin *bins = NULL;
 	WINDOW *fwin, ***bwin = NULL;
 	struct coords coords;
+	struct thread_context ctx;
+	pthread_mutex_t lock;
+	pthread_t thread;
 
 	data = xreallocarray(data, rctrl->stream.total_size, sizeof(u_char));
 	cdata = xcalloc(rctrl->stream.total_size, sizeof(u_char));
@@ -328,93 +342,138 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		}
 	}
 
+	/*
+	 * TODO - there is something strange happening with colors
+	 * it seems that for the initial render when the program starts, you
+	 * need to draw the screen twice for some reason. otherwise there is a
+	 * race condition and the screen blanks out for a flicker
+	 */
+	color_fix = draw_config.use_color ? -1 : 1;
+
+	ctx.data = data;
+	ctx.ctrl = rctrl;
+	ctx.lock = &lock;
+	ctx.status = 0;
+	pthread_mutex_init(&lock, NULL);
+	pthread_create(&thread, NULL, do_record, &ctx);
+
 	for (;;) {
-		dd = data;
 		reset_bins(bins, fft_config);
 		reset_bars(bars, draw_config, fft_config);
 
-		if (chan >= 0) {
-			dd = cdata;
-			copy_by_channel(rctrl, (u_int)chan, data, cdata);
-		}
-
-		if (pctrl != NULL) {
-			if ((res = stream(pctrl, dd)) != 0) {
+		if (pthread_mutex_trylock(&lock) == 0) {
+			if (ctx.status > 0) {
+				res = ctx.status;
+				pthread_mutex_unlock(&lock);
 				goto finish;
 			}
-		}
 
-		if ((res = to_normalized_pcm(dd, pcm, rctrl->config.encoding,
-			 rctrl->config.precision, rctrl->stream.total_size)) !=
-		    0) {
-			goto finish;
-		}
+			if (ctx.status != 0) {
+				goto unlock;
+			}
+			dd = data;
 
-		fft(fft_config, bins, pcm);
+			if (chan >= 0) {
+				dd = cdata;
+				copy_by_channel(rctrl, (u_int)chan, data,
+				    cdata);
+			}
 
-		/* Attribute a bin to the corresponding bar */
-		for (i = 0; i < fft_config.nbins; i++) {
-			freq = bins[i].frequency;
-			for (j = 0; j < draw_config.nbars; j++) {
-				if (freq >= bars[j].fmin &&
-				    freq < bars[j].fmax) {
-					bars[j].nbins += 1;
-					bars[j].magnitude +=
-					    (bins[i].magnitude -
-						bars[j].magnitude) /
-					    (float)bars[j].nbins;
-					break;
+			if (pctrl != NULL) {
+				if ((res = stream(pctrl, dd)) != 0) {
+					goto finish;
 				}
 			}
-		}
 
-		draw_start = calculate_draw_start(draw_config, bars);
-		j = 0;
-
-		werase(fwin);
-
-		bari = 0;
-		for (i = 0; i < draw_config.nbars; i++) {
-			if (bars[i].nbins <= 0)
-				continue;
-
-			scaled_magnitude = fminf(bars[i].magnitude,
-			    (float)(draw_config.max_h - draw_config.y_padding));
-			/* need at least a height of 2 to draw a box */
-			scaled_magnitude =
-			    scaled_magnitude < 2 ? 2 : scaled_magnitude;
-
-			draw_height = 0;
-			boxi = 0;
-			while (draw_height < (int)ceilf(scaled_magnitude) &&
-			       boxi < (int)draw_config.nboxes) {
-				calculate_coords(&coords, draw_config, bari,
-				    boxi, draw_start, (int)scaled_magnitude);
-				delwin(bwin[i][boxi]);
-				bwin[i][boxi] = subwin(fwin, coords.rows,
-				    coords.cols, coords.starty, coords.startx);
-
-				if (draw_config.use_color) {
-					/* add one because we never override the
-					 * first color */
-					int pidx = draw_config.ncolors > 1
-						       ? boxi + 1
-						       : 1;
-					wbkgd(bwin[i][boxi],
-					    COLOR_PAIR(pidx) | A_REVERSE);
-				} else {
-					box(bwin[i][boxi], 0, 0);
-				}
-
-				draw_height +=
-				    coords.rows + (int)draw_config.box_space;
-				boxi++;
+			if ((res = to_normalized_pcm(dd, pcm,
+				 rctrl->config.encoding,
+				 rctrl->config.precision,
+				 rctrl->stream.total_size)) != 0) {
+				goto finish;
 			}
-			bari++;
-		}
 
-		wnoutrefresh(fwin);
-		doupdate();
+			fft(fft_config, bins, pcm);
+
+			/* Attribute a bin to the corresponding bar */
+			for (i = 0; i < fft_config.nbins; i++) {
+				freq = bins[i].frequency;
+				for (j = 0; j < draw_config.nbars; j++) {
+					if (freq >= bars[j].fmin &&
+					    freq < bars[j].fmax) {
+						bars[j].nbins += 1;
+						bars[j].magnitude +=
+						    (bins[i].magnitude -
+							bars[j].magnitude) /
+						    (float)bars[j].nbins;
+						break;
+					}
+				}
+			}
+
+			draw_start = calculate_draw_start(draw_config, bars);
+			j = 0;
+
+			werase(fwin);
+
+			bari = 0;
+			for (i = 0; i < draw_config.nbars; i++) {
+				if (bars[i].nbins <= 0)
+					continue;
+
+				scaled_magnitude = fminf(bars[i].magnitude,
+				    (float)(draw_config.max_h -
+					    draw_config.y_padding));
+				/* need at least a height of 2 to draw a
+				 * box */
+				scaled_magnitude =
+				    scaled_magnitude < 2 ? 2 : scaled_magnitude;
+
+				draw_height = 0;
+				boxi = 0;
+				while (draw_height <
+					   (int)ceilf(scaled_magnitude) &&
+				       boxi < (int)draw_config.nboxes) {
+					calculate_coords(&coords, draw_config,
+					    bari, boxi, draw_start,
+					    (int)scaled_magnitude);
+					delwin(bwin[i][boxi]);
+					bwin[i][boxi] = subwin(fwin,
+					    coords.rows, coords.cols,
+					    coords.starty, coords.startx);
+
+					if (draw_config.use_color) {
+						/* add one because we
+						 * never override the
+						 * first color */
+						int pidx =
+						    draw_config.ncolors > 1
+							? boxi + 1
+							: 1;
+						wbkgd(bwin[i][boxi],
+						    COLOR_PAIR(pidx) |
+							A_REVERSE);
+					} else {
+						box(bwin[i][boxi], 0, 0);
+					}
+
+					draw_height +=
+					    coords.rows +
+					    (int)draw_config.box_space;
+					boxi++;
+				}
+				bari++;
+			}
+
+			if (color_fix <= 0) {
+				color_fix++;
+			} else {
+				ctx.status = -1;
+			}
+			wnoutrefresh(fwin);
+			doupdate();
+		unlock:
+			pthread_mutex_unlock(&lock);
+		}
 
 		/* listen for input */
 		flushinp();
@@ -429,10 +488,6 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 		if (option != 0 && option != DRAW_FREQ &&
 		    option != DRAW_DEBUG) {
 			res = option;
-			goto finish;
-		}
-
-		if ((res = stream(rctrl, data)) != 0) {
 			goto finish;
 		}
 	}
@@ -452,5 +507,49 @@ finish:
 	free(data);
 	free(cdata);
 	delwin(fwin);
+	pthread_cancel(thread);
+	pthread_mutex_lock(&lock);
+	ctx.status = -1;
+	pthread_mutex_unlock(&lock);
+	pthread_join(thread, 0);
+	pthread_mutex_destroy(&lock);
 	return res;
+}
+
+static void
+do_record_cleanup(void *arg)
+{
+	struct thread_context *ctx = arg;
+	pthread_mutex_unlock(ctx->lock);
+}
+
+static void *
+do_record(void *arg)
+{
+	struct thread_context *ctx;
+	int res;
+
+	ctx = arg;
+
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	for (;;) {
+		if (pthread_mutex_trylock(ctx->lock) == 0) {
+			pthread_cleanup_push(do_record_cleanup, ctx);
+
+			if (ctx->status != -1) {
+				goto loopend;
+			}
+
+			if ((res = stream(ctx->ctrl, ctx->data)) != 0) {
+				ctx->status = res;
+				goto loopend;
+			}
+
+			ctx->status = 0;
+		loopend:
+			pthread_cleanup_pop(1);
+		}
+	}
+
+	return NULL;
 }

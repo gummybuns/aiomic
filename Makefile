@@ -4,7 +4,7 @@ PROG=	audiov
 SRCS+=	main.c audio_ctrl.c decode.c draw.c draw_config.c fft.c pcm.c colors.c
 SRCS+=	xmalloc.c
 
-LDADD+=	-lcurses -lm
+LDADD+=	-lcurses -lm -lpthread -lrt
 DPADD+=	${LIBCURSES} ${LIBM}
 
 WARNS=	6
