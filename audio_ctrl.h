@@ -51,6 +51,7 @@ struct stream {
 };
 
 struct audio_ctrl {
+	char pad;					/* is a pad device */
 	int fd;                     /* file descriptor to the audio device */
 	u_int mode;                 /* record vs play */
 	struct audio_config config; /* the configuration of the audio device */

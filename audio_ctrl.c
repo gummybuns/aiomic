@@ -159,6 +159,7 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
 	ctrl->path = path;
 	ctrl->fd = fd;
 	ctrl->mode = mode;
+	ctrl->pad = is_pad_device(path);
 
 	if (is_pad_device(path)) {
 		ctrl->config.precision = 16;

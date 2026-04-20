@@ -25,6 +25,7 @@
 #define E_FREQ_UNSUPPORTED_ENCODING 2501
 
 #define E_STREAM_IO_ERROR 3000
+#define E_STREAM_PAD_DELAY 3001
 
 static inline const char *get_error_msg(int code);
 
@@ -66,6 +67,8 @@ get_error_msg(int code)
 		return "Unsupported encoding";
 	case E_STREAM_IO_ERROR:
 		return "Streaming I/O error";
+	case E_STREAM_PAD_DELAY:
+		return "Streaming pad device failed to sleep";
 	case E_UNHANDLED:
 	default:
 		return "Unhandled Error";
