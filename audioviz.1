@@ -1,4 +1,4 @@
-.\"     $NetBSD: audiov.1,v 1.0 2026/07/21 13:15:00 gummybuns Exp $
+.\"     $NetBSD: audioviz.1,v 1.0 2026/07/22 14:22:00 gummybuns Exp $
 .\"
 .\" Copyright (c) 2021 The NetBSD Foundation, Inc.
 .\" All rights reserved.
@@ -27,14 +27,14 @@
 .\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 .\" POSSIBILITY OF SUCH DAMAGE.
 .\"
-.Dd April 18, 2026
-.Dt AUDIOV 1
+.Dd July 22, 2026
+.Dt AUDIOVIZ 1
 .Os
 .Sh NAME
-.Nm audiov
+.Nm audioviz
 .Nd graphical audio frequency visualizer
 .Sh SYNOPSIS
-.Nm audiov
+.Nm audioviz
 .Op Fl c Ar channels
 .Op Fl d Ar device
 .Op Fl e Ar encoding
@@ -92,8 +92,8 @@ The starting frequency for the first bar of the visualization. Defaults to 50.
 .It Fl o, Fl -output-device Ar output-device Ac
 The audio device to play the recorded audio. The output device will be
 configured to match the same settings as the
-.Ar device
-Defaults to /dev/audio.
+.Ar device.
+Defaults to /dev/audio when used without an argument.
 .It Fl p, Fl -precision Ar precision Ac
 The bit precision of each sample. Defaults to the preconfigured value for the
 device.
@@ -197,14 +197,14 @@ devices when specified as the
 and playback can then be echo'd when specifying the
 .Ar output-device
 as a physical audio device.
-.D1 audiov -d /dev/pad0 -o /dev/audio1
+.D1 audioviz -d /dev/pad0 -o /dev/audio1
 .D1 mpg123 -a /dev/audio2 /path/to/music.mp3
 .Sh EXAMPLES
-.D1 audiov -d /dev/audio2
-.D1 audiov -U -W 8
-.D1 audiov -C red -M 100
-.D1 audiov -X -C cyan -E blue
-.D1 audiov -X -C red -E green -S 0
+.D1 audioviz -d /dev/audio2
+.D1 audioviz -U -W 8
+.D1 audioviz -C red -M 100
+.D1 audioviz -X -C cyan -E blue
+.D1 audioviz -X -C red -E green -S 0
 .Sh SEE ALSO
 .Xr audio 4
 .Xr audiocfg 1

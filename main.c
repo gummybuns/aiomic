@@ -60,7 +60,7 @@
 static void
 usage(void)
 {
-	fputs("audiov "
+	fputs("audioviz\n"
 	      "\t[-c channels] [-d device] [-e encoding] [-f fft-samples]\n"
 	      "\t[-m fft-min] [-h] [-o output-device] [-p precision]\n"
 	      "\t[-s sample-rate] [-C color] [-E color-end] [-H box-height]\n"
