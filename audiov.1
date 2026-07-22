@@ -1,4 +1,4 @@
-.\"     $NetBSD: audiov.1,v 1.0 2026/06/25 17:02:20 gummybuns Exp $
+.\"     $NetBSD: audiov.1,v 1.0 2026/07/21 13:15:00 gummybuns Exp $
 .\"
 .\" Copyright (c) 2021 The NetBSD Foundation, Inc.
 .\" All rights reserved.
@@ -214,17 +214,3 @@ as a physical audio device.
 was written by
 .An Zac Brown
 .Aq gummybuns@protonmail.com .
-.Sh Bugs
-.Pp
-When
-.Ar device
-is specified as a
-.Xr pad 4
-device
-and
-.Ar output-device
-is not included,
-.Nm
-will appear to flicker. I believe this is because the
-.Xr pad 4
-device is padded with zeros until the full dataset can be read.

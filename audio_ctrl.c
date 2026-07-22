@@ -159,8 +159,9 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
 	ctrl->path = path;
 	ctrl->fd = fd;
 	ctrl->mode = mode;
+	ctrl->pad = is_pad_device(path);
 
-	if (is_pad_device(path)) {
+	if (ctrl->pad) {
 		ctrl->config.precision = 16;
 		ctrl->config.encoding = AUDIO_ENCODING_SLINEAR_LE;
 		ctrl->config.buffer_size = 65268;

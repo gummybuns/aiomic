@@ -275,8 +275,7 @@ main(int argc, char *argv[])
 	}
 
 	/* pad devices cannot have their configurations changed */
-	if (!is_pad_device(rctrl.path) &&
-	    (res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
+	if (!rctrl.pad && (res = update_audio_ctrl(&rctrl, audio_config)) != 0) {
 		goto handle_error;
 	}
 	set_stream_rate(&rctrl, record_rate);
@@ -293,7 +292,7 @@ main(int argc, char *argv[])
 		}
 
 		/* the buffer sizes must match or you get a clicky sound */
-		if (is_pad_device(rctrl.path)) {
+		if (rctrl.pad) {
 			rctrl.config.buffer_size = pctrl->config.buffer_size;
 		}
 
