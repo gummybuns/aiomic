@@ -283,7 +283,7 @@ int
 stream(struct audio_ctrl *ctrl, u_char *data)
 {
 	u_int i, ns;
-	ssize_t io_count;
+	ssize_t io_count, cur;
 	io_count = 0;
 	i = 0;
 
@@ -291,14 +291,20 @@ stream(struct audio_ctrl *ctrl, u_char *data)
 		/* the stream rate or whats left */
 		ns = (u_int)fminf((float)ctrl->stream.rate,
 		    (float)(ctrl->stream.total_size - i));
-		if (ctrl->mode == AUMODE_RECORD) {
-			io_count = read(ctrl->fd, data, ns);
-		} else {
-			io_count = write(ctrl->fd, data, ns);
-		}
+		cur = 0;
 
-		if (io_count < 0) {
-			return E_STREAM_IO_ERROR;
+		while (cur < ns) {
+			if (ctrl->mode == AUMODE_RECORD) {
+				io_count = read(ctrl->fd, data + cur, ns);
+			} else {
+				io_count = write(ctrl->fd, data + cur, ns);
+			}
+
+			if (io_count < 0) {
+				return E_STREAM_IO_ERROR;
+			}
+
+			cur += io_count;
 		}
 
 		i += ns;

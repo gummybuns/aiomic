@@ -54,7 +54,6 @@ struct thread_context {
 
 static void *do_record(void *);
 static void do_record_cleanup(void *);
-static int msleep(u_int);
 
 /*
  * Print details about the audio controller
@@ -290,22 +289,6 @@ calculate_coords(struct coords *coords, struct draw_config cfg, int bi, int xi,
 	coords->starty = starty;
 }
 
-static int
-msleep(u_int ms)
-{
-	int res;
-	struct timespec ts;
-
-	ts.tv_sec = ms / 1000;
-	ts.tv_nsec = (ms % 1000) * 1000000L;
-
-	do {
-		res = nanosleep(&ts, &ts);
-	} while (res && errno == EINTR);
-
-	return res;
-}
-
 /*
  * Displays a screen to record audio and display the data in the frequency
  * spectrum.
@@ -400,16 +383,6 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 
 			if (pctrl != NULL) {
 				if ((res = stream(pctrl, dd)) != 0) {
-					goto finish;
-				}
-			} else if (rctrl->pad) {
-				/*
-				 * When using pad without playback there is a flicker. Sleep
-				 * the same amount of time as playback should take.
-				 * There is probably a better way than sleeping...
-				 */
-				if (msleep(rctrl->stream.ms) != 0) {
-					res = E_STREAM_PAD_DELAY;
 					goto finish;
 				}
 			}
