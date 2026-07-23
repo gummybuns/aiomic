@@ -30,25 +30,63 @@
 #include "error_codes.h"
 #include <math.h>
 
-/*
- * Helper function to do the fft math
- */
-inline void
-_fft(cplx *buf, cplx *out, u_int n, u_int step)
+static void evens(cplx *, cplx *, u_int);
+static void odds(cplx *, cplx *, u_int);
+static void ct_fft(cplx *, cplx *, u_int);
+
+static void
+evens(cplx *in, cplx *out, u_int in_size)
 {
-	u_int i;
+	u_int i, j;
+
+	j = 0;
+	for (i = 0; i < in_size; i += 2) {
+		out[j] = in[i];
+		j++;
+	}
+}
+
+static void
+odds(cplx *in, cplx *out, u_int in_size)
+{
+	if (in_size <= 1) {
+		return;
+	}
+
+	evens(in + 1, out, in_size - 1);
+}
+
+/*
+ * Cooley-Tukey FFT Implementation
+ */
+static void
+ct_fft(cplx *A, cplx *Y, u_int N)
+{
+	u_int j;
 	double PI;
+	cplx W, WN;
+	cplx A_even[N / 2];
+	cplx A_odd[N / 2];
+	cplx Y_even[N / 2];
+	cplx Y_odd[N / 2];
 
 	PI = atan2(1, 1) * 4;
 
-	if (step < n) {
-		_fft(out, buf, n, step * 2);
-		_fft(out + step, buf + step, n, step * 2);
+	if (N == 1) {
+		Y[0] = A[0];
+	} else {
+		W = 1;
+		WN = cexp(-2.0 * PI * I / N);
 
-		for (i = 0; i < n; i += 2 * step) {
-			cplx t = cexp(-I * PI * i / n) * out[i + step];
-			buf[i / 2] = out[i] + t;
-			buf[(i + n) / 2] = out[i] - t;
+		evens(A, A_even, N);
+		odds(A, A_odd, N);
+		ct_fft(A_even, Y_even, N / 2);
+		ct_fft(A_odd, Y_odd, N / 2);
+
+		for (j = 0; j <= N / 2 - 1; j++) {
+			Y[j] = Y_even[j] + W * Y_odd[j];
+			Y[j + N/2] = Y_even[j] - W * Y_odd[j];
+			W = W * WN;
 		}
 	}
 }
@@ -75,14 +113,14 @@ fft(struct fft_config config, struct bin *bins, float *pcm)
 		start = i * config.nsamples;
 		for (j = 0; j < config.nsamples; j++) {
 			buf[j] = pcm[start + j];
-			out[j] = pcm[start + j];
+			out[j] = 0;;
 		}
 
-		_fft(buf, out, config.nsamples, 1);
+		ct_fft(buf, out, config.nsamples);
 
 		for (j = 0; j < config.nbins; j++) {
-			real = (float)creal(buf[j]);
-			imag = (float)cimag(buf[j]);
+			real = (float)creal(out[j]);
+			imag = (float)cimag(out[j]);
 			bins[j].magnitude += sqrtf(real * real + imag * imag);
 		}
 	}
