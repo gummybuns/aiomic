@@ -95,11 +95,10 @@ ct_fft(cplx *A, cplx *Y, u_int N)
  * Perform the fft on the normalized pcm data
  *
  * Breaks the pcm data into subsets (frames) based on the fft_config, each frame
- * frame being a specific size (nsamples).
+ * being a specific size (nsamples).
  *
- * The fft is then calculated on that
- * specific frame, and the magnitude is each frequency bin is summed up and
- * averaged over each frame.
+ * The fft is then calculated on that specific frame, and the magnitude of each
+ * frequency bin is summed up and averaged over each frame.
  */
 int
 fft(struct fft_config config, struct bin *bins, float *pcm)

@@ -72,7 +72,7 @@ usage(void)
 	exit(1);
 }
 
-static inline int
+static int
 build_draw_config(struct draw_config *config)
 {
 	int rows, cols, x_padding, y_padding;

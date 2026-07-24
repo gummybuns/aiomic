@@ -425,10 +425,8 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 				scaled_magnitude = fminf(bars[i].magnitude,
 				    (float)(draw_config.max_h -
 					    draw_config.y_padding));
-				/* need at least a height of 2 to draw a
-				 * box */
-				scaled_magnitude =
-				    scaled_magnitude < 2 ? 2 : scaled_magnitude;
+				/* need at least a height of 2 to draw a box */
+				scaled_magnitude = scaled_magnitude < 2 ? 2 : scaled_magnitude;
 
 				draw_height = 0;
 				boxi = 0;
@@ -444,23 +442,14 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 					    coords.starty, coords.startx);
 
 					if (draw_config.use_color) {
-						/* add one because we
-						 * never override the
-						 * first color */
-						int pidx =
-						    draw_config.ncolors > 1
-							? boxi + 1
-							: 1;
-						wbkgd(bwin[i][boxi],
-						    COLOR_PAIR(pidx) |
-							A_REVERSE);
+						/* add one because we never override the first color */
+						int pidx = draw_config.ncolors > 1 ? boxi + 1 : 1;
+						wbkgd(bwin[i][boxi], COLOR_PAIR(pidx) | A_REVERSE);
 					} else {
 						box(bwin[i][boxi], 0, 0);
 					}
 
-					draw_height +=
-					    coords.rows +
-					    (int)draw_config.box_space;
+					draw_height += coords.rows + (int)draw_config.box_space;
 					boxi++;
 				}
 				bari++;
@@ -477,7 +466,6 @@ draw_frequency(struct audio_ctrl *rctrl, struct audio_ctrl *pctrl,
 			pthread_mutex_unlock(&lock);
 		}
 
-		/* listen for input */
 		flushinp();
 		keypress = (char)getch();
 		option = check_options(keypress);

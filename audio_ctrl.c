@@ -41,7 +41,7 @@
 
 #define PRINFO(m, i) (m == AUMODE_RECORD ? &(i.record) : &(i.play))
 
-inline u_int
+static u_int
 calc_total_samples(struct audio_ctrl *ctrl)
 {
 	return (u_int)ceilf((float)ctrl->stream.ms / 1000 *
@@ -49,7 +49,7 @@ calc_total_samples(struct audio_ctrl *ctrl)
 			    (float)ctrl->config.channels);
 }
 
-inline u_int
+static u_int
 calc_total_size(struct audio_ctrl *ctrl)
 {
 	return ctrl->stream.total_samples * ctrl->config.precision /
@@ -212,9 +212,8 @@ build_audio_ctrl(struct audio_ctrl *ctrl, const char *path, u_int mode,
 
 /*
  * Set the stream rate of the audio ctrl.
- * The stream rate determines the number of bytes to read/write at a time when
- * streaming the audio device. The rate shall never
- * never exceed the device buffer size and will default
+ * The stream rate determines the number of bytes to read/write at a time.
+ * The rate shall never exceed the device buffer size and will default
  * to the total size of the buffer needed to stream the
  * ctrl's milliseconds
  */
@@ -231,6 +230,11 @@ set_stream_rate(struct audio_ctrl *ctrl, u_int rate)
 	return 0;
 }
 
+/*
+ * update the ctrl's configuration.
+ * re-fetch the details after setting since not all changes are guaranteed to
+ * be applied
+ */
 int
 update_audio_ctrl(struct audio_ctrl *ctrl, struct audio_config cfg)
 {
@@ -258,7 +262,6 @@ update_audio_ctrl(struct audio_ctrl *ctrl, struct audio_config cfg)
 		return E_CTRL_SETINFO;
 	}
 
-	/* update ctrl to reflect changes */
 	if (ioctl(ctrl->fd, AUDIO_GETINFO, &info) == -1) {
 		return E_CTRL_GETINFO;
 	}

@@ -36,7 +36,7 @@
  * Swapping is meant to be done when an audio encoding is used that differs from
  * the machine's endian-ness.
  */
-static inline int
+static int
 set_swap_func(struct pcm_converter *converter, u_int precision, u_int encoding)
 {
 	converter->swap_func = NULL;
@@ -83,7 +83,7 @@ set_swap_func(struct pcm_converter *converter, u_int precision, u_int encoding)
 /*
  * Set the sign function of a converter for an unsigned audio encoding
  */
-static inline int
+static int
 set_sign_func(struct pcm_converter *converter, u_int precision, u_int encoding)
 {
 	converter->sign_func = NULL;
@@ -120,7 +120,7 @@ set_sign_func(struct pcm_converter *converter, u_int precision, u_int encoding)
 /*
  * Set the normalization function for a converter based on the precision
  */
-static inline int
+static int
 set_normalize_func(struct pcm_converter *converter, u_int precision)
 {
 	switch (precision) {

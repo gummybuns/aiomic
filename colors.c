@@ -55,8 +55,9 @@ init_color_pairs(u_int coffset, u_int n, struct color start, struct color end)
 		b = (short)((1 - t) * start.b + t * end.b);
 
 		res = init_color((short)(i + coffset), r, g, b);
-		if (res != 0)
+		if (res != 0) {
 			return res;
+		}
 
 		/* i + 1 since we cannot override the default pair */
 		init_pair((short)(i + 1), (short)(i + coffset), -1);
