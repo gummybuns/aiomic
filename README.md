@@ -1,8 +1,8 @@
 # audioviz
 
 `audioviz` is a curses frontend to test NetBSD audio recording devices.
-[demo.webm](https://github.com/user-attachments/assets/77aa5b4c-a1ec-4455-806d-a71ba3f0b596)
 
+https://github.com/user-attachments/assets/7043a073-6c54-4812-b8b6-984a3bceecb0
 
 
 ## Build
